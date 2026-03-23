@@ -34,6 +34,13 @@ yarn-error.log*
 .env*.local
 .env
 
+# docs images
+/docs/**/*.png
+/docs/**/*.jpg
+/docs/**/*.jpeg
+/docs/**/*.gif
+/docs/**/*.webp
+
 # vercel
 .vercel
 
