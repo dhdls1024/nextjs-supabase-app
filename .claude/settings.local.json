@@ -1,0 +1,53 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Bash",
+      "WebFetch",
+      "WebSearch",
+      "mcp__ide",
+      "mcp__shadcn",
+      "mcp__playwright",
+      "mcp__sequential-thinking",
+      "mcp__shadcn__search_items_in_registries",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__get-library-docs",
+      "Bash(find C:/Users/admin/workspace/courses/nextjs-supabase-app -type d -not -path */node_modules/* -not -path */.git/* -not -path */.next/*)",
+      "mcp__supabase",
+      "mcp__supabase__*",
+      "mcp__supabase__apply_migration",
+      "mcp__supabase__execute_sql",
+      "mcp__ide__getDiagnostics"
+    ],
+    "deny": [],
+    "ask": []
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "playwright"
+  ],
+  "hooks": {
+    "Notification": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/notification-hook.sh"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/stop-hook.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
