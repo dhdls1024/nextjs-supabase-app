@@ -7,11 +7,7 @@
     "playwright": {
       "type": "stdio",
       "command": "cmd",
-      "args": [
-        "/c",
-        "npx",
-        "@playwright/mcp@latest"
-      ],
+      "args": ["/c", "npx", "@playwright/mcp@latest"],
       "env": {}
     },
     "context7": {
@@ -21,30 +17,17 @@
     "sequential-thinking": {
       "type": "stdio",
       "command": "cmd",
-      "args": [
-        "/c",
-        "npx",
-        "-y",
-        "@modelcontextprotocol/server-sequential-thinking"
-      ],
+      "args": ["/c", "npx", "-y", "@modelcontextprotocol/server-sequential-thinking"],
       "env": {}
     },
     "shadcn": {
       "type": "stdio",
       "command": "cmd",
-      "args": [
-        "/c",
-        "npx",
-        "shadcn@latest",
-        "mcp"
-      ]
+      "args": ["/c", "npx", "shadcn@latest", "mcp"]
     },
     "shrimp-task-manager": {
       "command": "npx",
-      "args": [
-        "-y",
-        "mcp-shrimp-task-manager"
-      ],
+      "args": ["-y", "mcp-shrimp-task-manager"],
       "env": {
         "DATA_DIR": "/Users/admin/workspace/courses/nextjs-supabase-app/shrimp-data",
         "TEMPLATES_USE": "en",

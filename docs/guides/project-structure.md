@@ -37,6 +37,7 @@ src/app/
 ```
 
 **🚀 App Router 규칙:**
+
 - `page.tsx`: 해당 경로의 메인 페이지
 - `layout.tsx`: 레이아웃 컴포넌트 (자식 페이지 감쌈)
 - `loading.tsx`: 로딩 UI (필요시)
@@ -107,6 +108,7 @@ src/lib/
 ```
 
 **📚 lib/ 폴더 확장 가이드:**
+
 ```
 src/lib/
 ├── utils.ts           # 공통 유틸리티
@@ -145,13 +147,13 @@ userprofile.tsx         # 소문자만 (금지)
 
 ```typescript
 // ✅ 올바른 컴포넌트 네이밍
-export function UserProfile() { }     // PascalCase
-export function LoginForm() { }       // PascalCase
-export function APIEndpoint() { }     // 약어도 PascalCase
+export function UserProfile() {} // PascalCase
+export function LoginForm() {} // PascalCase
+export function APIEndpoint() {} // 약어도 PascalCase
 
 // ❌ 잘못된 컴포넌트 네이밍
-export function userProfile() { }     // camelCase (금지)
-export function login_form() { }      // snake_case (금지)
+export function userProfile() {} // camelCase (금지)
+export function login_form() {} // snake_case (금지)
 ```
 
 ### 폴더 네이밍
@@ -173,16 +175,17 @@ user_settings/         # snake_case (금지)
 
 ```typescript
 // ✅ 경로 별칭 사용 (권장)
-import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
-import { LoginForm } from '@/components/login-form'
+import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
+import { LoginForm } from "@/components/login-form"
 
 // ❌ 상대 경로 사용 (금지)
-import { Button } from '../../../components/ui/button'
-import { cn } from '../../lib/utils'
+import { Button } from "../../../components/ui/button"
+import { cn } from "../../lib/utils"
 ```
 
 **📍 정의된 별칭:**
+
 - `@/components` → `src/components`
 - `@/lib` → `src/lib`
 - `@/hooks` → `src/hooks`
@@ -238,37 +241,41 @@ src/lib/api-utils.ts        # 새 파일 생성
 ## 🎯 코드 조직 베스트 프랙티스
 
 ### 1. 단일 책임 원칙
+
 - 하나의 파일은 하나의 주요 기능만 담당
 - 관련된 타입과 유틸리티는 같은 파일에 포함 가능
 
 ### 2. 의존성 순서
+
 ```typescript
 // 1. 외부 라이브러리
-import React from 'react'
-import { NextPage } from 'next'
+import React from "react"
+import { NextPage } from "next"
 
 // 2. 내부 라이브러리 (@/ 경로)
-import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
+import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 
 // 3. 상대 경로
-import './component.css'
+import "./component.css"
 ```
 
 ### 3. Export 규칙
+
 ```typescript
 // ✅ Named export 사용 (권장)
-export function LoginForm() { }
+export function LoginForm() {}
 
 // ✅ Default export (페이지 컴포넌트)
-export default function LoginPage() { }
+export default function LoginPage() {}
 
 // ❌ 혼재 사용 지양
-export function LoginForm() { }
-export default LoginForm  // 같은 컴포넌트를 두 방식으로 export
+export function LoginForm() {}
+export default LoginForm // 같은 컴포넌트를 두 방식으로 export
 ```
 
 ### 4. 파일 크기 관리
+
 - 단일 파일: 300줄 이하 권장
 - 300줄 초과 시 분할 고려
 - 관련 기능별로 분리
@@ -299,11 +306,11 @@ export function SuperMegaComponent() {
 }
 
 // 혼재된 import
-import Button from '@/components/ui/button'  // default
-import { Card } from '@/components/ui/card'  // named
+import Button from "@/components/ui/button" // default
+import { Card } from "@/components/ui/card" // named
 
 // 깊은 상대 경로
-import { utils } from '../../../../../lib/utils'
+import { utils } from "../../../../../lib/utils"
 ```
 
 ## ✅ 체크리스트

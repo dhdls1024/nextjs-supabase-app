@@ -23,8 +23,8 @@ npm install use-debounce react-error-boundary
 
 ```typescript
 // lib/types/forms.ts
-import { z } from 'zod'
-import { UseFormReturn } from 'react-hook-form'
+import { z } from "zod"
+import { UseFormReturn } from "react-hook-form"
 
 // 공통 폼 타입 정의
 export type FormState<T extends z.ZodSchema> = {
@@ -56,26 +56,26 @@ export interface FormHookProps<T extends z.ZodSchema> {
 
 ```typescript
 // lib/schemas/auth.ts
-import { z } from 'zod'
+import { z } from "zod"
 
 // 🚀 재사용 가능한 기본 스키마 컴포넌트
 export const emailSchema = z
   .string()
-  .min(1, '이메일을 입력해주세요')
-  .email('올바른 이메일 형식이 아닙니다')
+  .min(1, "이메일을 입력해주세요")
+  .email("올바른 이메일 형식이 아닙니다")
 
 export const passwordSchema = z
   .string()
-  .min(8, '비밀번호는 최소 8자 이상이어야 합니다')
+  .min(8, "비밀번호는 최소 8자 이상이어야 합니다")
   .regex(
     /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
-    '비밀번호는 대문자, 소문자, 숫자, 특수문자를 포함해야 합니다'
+    "비밀번호는 대문자, 소문자, 숫자, 특수문자를 포함해야 합니다"
   )
 
 // 로그인 폼 스키마
 export const loginSchema = z.object({
   email: emailSchema,
-  password: z.string().min(1, '비밀번호를 입력해주세요'),
+  password: z.string().min(1, "비밀번호를 입력해주세요"),
 })
 
 // 회원가입 폼 스키마
@@ -83,18 +83,18 @@ export const registerSchema = z
   .object({
     name: z
       .string()
-      .min(2, '이름은 최소 2자 이상이어야 합니다')
-      .max(50, '이름은 최대 50자까지 입력 가능합니다'),
+      .min(2, "이름은 최소 2자 이상이어야 합니다")
+      .max(50, "이름은 최대 50자까지 입력 가능합니다"),
     email: emailSchema,
     password: passwordSchema,
     confirmPassword: z.string(),
     terms: z.boolean().refine((val) => val === true, {
-      message: '이용약관에 동의해주세요',
+      message: "이용약관에 동의해주세요",
     }),
   })
   .refine((data) => data.password === data.confirmPassword, {
-    message: '비밀번호가 일치하지 않습니다',
-    path: ['confirmPassword'],
+    message: "비밀번호가 일치하지 않습니다",
+    path: ["confirmPassword"],
   })
 
 export type LoginFormData = z.infer<typeof loginSchema>
@@ -105,20 +105,20 @@ export type RegisterFormData = z.infer<typeof registerSchema>
 
 ```typescript
 // app/actions/auth.ts
-'use server'
+"use server"
 
-import { z } from 'zod'
-import { redirect } from 'next/navigation'
-import { after } from 'next/server'
-import { loginSchema, registerSchema } from '@/lib/schemas/auth'
-import type { ActionResult } from '@/lib/types/forms'
+import { z } from "zod"
+import { redirect } from "next/navigation"
+import { after } from "next/server"
+import { loginSchema, registerSchema } from "@/lib/schemas/auth"
+import type { ActionResult } from "@/lib/types/forms"
 
 // 🔧 Mock 헬퍼 함수들 (실제 구현 필요)
 async function authenticateUser(email: string, password: string) {
   // TODO: 실제 인증 로직 구현
   // 예: 데이터베이스에서 사용자 확인, 비밀번호 검증
-  if (email === 'test@example.com' && password === 'password123') {
-    return { id: '1', email, name: 'Test User' }
+  if (email === "test@example.com" && password === "password123") {
+    return { id: "1", email, name: "Test User" }
   }
   return null
 }
@@ -142,7 +142,7 @@ async function updateLastLoginTime(userId: string) {
 async function getUserByEmail(email: string) {
   // TODO: 실제 데이터베이스 조회
   // 예시: 중복 이메일 확인
-  const existingEmails = ['existing@example.com']
+  const existingEmails = ["existing@example.com"]
   return existingEmails.includes(email) ? { email } : null
 }
 
@@ -158,7 +158,7 @@ async function createUser(userData: { name: string; email: string; password: str
     ...userData,
     createdAt: new Date(),
   }
-  console.log('Created user:', newUser)
+  console.log("Created user:", newUser)
   return newUser
 }
 
@@ -175,14 +175,14 @@ export async function loginAction(
   try {
     // 🚀 필수: 서버 사이드 스키마 검증
     const validatedFields = loginSchema.safeParse({
-      email: formData.get('email'),
-      password: formData.get('password'),
+      email: formData.get("email"),
+      password: formData.get("password"),
     })
 
     if (!validatedFields.success) {
       return {
         success: false,
-        message: '입력된 정보를 확인해주세요',
+        message: "입력된 정보를 확인해주세요",
         errors: validatedFields.error.flatten().fieldErrors,
       }
     }
@@ -195,7 +195,7 @@ export async function loginAction(
     if (!user) {
       return {
         success: false,
-        message: '이메일 또는 비밀번호가 올바르지 않습니다',
+        message: "이메일 또는 비밀번호가 올바르지 않습니다",
       }
     }
 
@@ -204,30 +204,30 @@ export async function loginAction(
 
     // 🔄 비동기 후처리 작업
     after(async () => {
-      await logUserActivity(user.id, 'login')
+      await logUserActivity(user.id, "login")
       await updateLastLoginTime(user.id)
     })
 
     return {
       success: true,
-      message: '로그인되었습니다',
+      message: "로그인되었습니다",
       data: { userId: user.id },
     }
   } catch (error) {
-    console.error('Login error:', error)
+    console.error("Login error:", error)
     return {
       success: false,
-      message: '로그인 중 오류가 발생했습니다',
+      message: "로그인 중 오류가 발생했습니다",
     }
   }
 }
 
 // 리다이렉션이 필요한 경우
 export async function loginWithRedirect(formData: FormData) {
-  const result = await loginAction({ success: false, message: '' }, formData)
+  const result = await loginAction({ success: false, message: "" }, formData)
 
   if (result.success) {
-    redirect('/dashboard')
+    redirect("/dashboard")
   }
 
   return result
@@ -240,17 +240,17 @@ export async function registerAction(
 ): Promise<ActionResult> {
   try {
     const validatedFields = registerSchema.safeParse({
-      name: formData.get('name'),
-      email: formData.get('email'),
-      password: formData.get('password'),
-      confirmPassword: formData.get('confirmPassword'),
-      terms: formData.get('terms') === 'on',
+      name: formData.get("name"),
+      email: formData.get("email"),
+      password: formData.get("password"),
+      confirmPassword: formData.get("confirmPassword"),
+      terms: formData.get("terms") === "on",
     })
 
     if (!validatedFields.success) {
       return {
         success: false,
-        message: '입력된 정보를 확인해주세요',
+        message: "입력된 정보를 확인해주세요",
         errors: validatedFields.error.flatten().fieldErrors,
       }
     }
@@ -262,8 +262,8 @@ export async function registerAction(
     if (existingUser) {
       return {
         success: false,
-        message: '이미 사용 중인 이메일입니다',
-        errors: { email: ['이미 사용 중인 이메일입니다'] },
+        message: "이미 사용 중인 이메일입니다",
+        errors: { email: ["이미 사용 중인 이메일입니다"] },
       }
     }
 
@@ -278,19 +278,19 @@ export async function registerAction(
     // 후처리 작업
     after(async () => {
       await sendWelcomeEmail(email, name)
-      await logUserActivity(user.id, 'register')
+      await logUserActivity(user.id, "register")
     })
 
     return {
       success: true,
-      message: '회원가입이 완료되었습니다',
+      message: "회원가입이 완료되었습니다",
       data: { userId: user.id },
     }
   } catch (error) {
-    console.error('Register error:', error)
+    console.error("Register error:", error)
     return {
       success: false,
-      message: '회원가입 중 오류가 발생했습니다',
+      message: "회원가입 중 오류가 발생했습니다",
     }
   }
 }
@@ -1324,7 +1324,7 @@ export function CSRFTokenInput() {
 
 ```typescript
 // lib/rate-limit.ts
-import { headers } from 'next/headers'
+import { headers } from "next/headers"
 
 const rateLimitMap = new Map<string, { count: number; lastReset: number }>()
 
@@ -1348,12 +1348,12 @@ export async function checkRateLimit(identifier: string, limit = 5, window = 600
 // 서버 액션에서 사용
 export async function rateLimitedAction(formData: FormData) {
   const headersList = await headers()
-  const ip = headersList.get('x-forwarded-for') || 'unknown'
+  const ip = headersList.get("x-forwarded-for") || "unknown"
 
-  if (!await checkRateLimit(ip)) {
+  if (!(await checkRateLimit(ip))) {
     return {
       success: false,
-      message: '너무 많은 요청입니다. 잠시 후 다시 시도해주세요.',
+      message: "너무 많은 요청입니다. 잠시 후 다시 시도해주세요.",
     }
   }
 
@@ -1476,47 +1476,47 @@ function SecureForm() {
 
 ```typescript
 // app/actions/profile.ts
-'use server'
+"use server"
 
 export async function submitProfileAction(formData: FormData) {
   try {
     // TODO: 실제 프로필 저장 로직 구현
-    console.log('Profile data received:', Object.fromEntries(formData))
+    console.log("Profile data received:", Object.fromEntries(formData))
 
     return {
       success: true,
-      message: '프로필이 성공적으로 저장되었습니다.',
+      message: "프로필이 성공적으로 저장되었습니다.",
     }
   } catch (error) {
     return {
       success: false,
-      message: '프로필 저장 중 오류가 발생했습니다.',
+      message: "프로필 저장 중 오류가 발생했습니다.",
     }
   }
 }
 
 // app/actions/documents.ts
-'use server'
+;("use server")
 
 export async function submitDocumentAction(formData: FormData) {
   try {
     // TODO: 실제 문서 저장 로직 구현
-    console.log('Document data received:', Object.fromEntries(formData))
+    console.log("Document data received:", Object.fromEntries(formData))
 
     return {
       success: true,
-      message: '문서가 성공적으로 업로드되었습니다.',
+      message: "문서가 성공적으로 업로드되었습니다.",
     }
   } catch (error) {
     return {
       success: false,
-      message: '문서 업로드 중 오류가 발생했습니다.',
+      message: "문서 업로드 중 오류가 발생했습니다.",
     }
   }
 }
 
 // app/actions/drafts.ts
-'use server'
+;("use server")
 
 export async function saveDraftAction(draftId: string, data: any) {
   try {
@@ -1525,12 +1525,12 @@ export async function saveDraftAction(draftId: string, data: any) {
 
     return {
       success: true,
-      message: '자동 저장되었습니다.',
+      message: "자동 저장되었습니다.",
     }
   } catch (error) {
     return {
       success: false,
-      message: '자동 저장에 실패했습니다.',
+      message: "자동 저장에 실패했습니다.",
     }
   }
 }
