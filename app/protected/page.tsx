@@ -1,8 +1,8 @@
+import { InfoIcon } from "lucide-react"
 import { redirect } from "next/navigation"
 import { Suspense } from "react"
 
 import { createClient } from "@/lib/supabase/server"
-import { InfoIcon } from "lucide-react"
 import type { Profile } from "@/lib/types/database"
 
 // JWT claims를 JSON으로 출력하는 컴포넌트 (디버깅용)
@@ -22,7 +22,10 @@ async function UserProfile() {
   const supabase = await createClient()
 
   // 현재 로그인한 사용자 조회
-  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser()
 
   if (userError || !user) {
     redirect("/auth/login")
@@ -48,9 +51,7 @@ async function UserProfile() {
       <ProfileField
         label="가입일"
         value={
-          profile?.created_at
-            ? new Date(profile.created_at).toLocaleDateString("ko-KR")
-            : "미설정"
+          profile?.created_at ? new Date(profile.created_at).toLocaleDateString("ko-KR") : "미설정"
         }
       />
     </div>
@@ -60,21 +61,19 @@ async function UserProfile() {
 // 프로필 필드 1행을 렌더링하는 표시 전용 컴포넌트
 function ProfileField({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex gap-4 items-start border-b pb-2 last:border-0">
-      <span className="text-sm font-medium text-muted-foreground w-24 shrink-0">
-        {label}
-      </span>
-      <span className="text-sm break-all">{value}</span>
+    <div className="flex items-start gap-4 border-b pb-2 last:border-0">
+      <span className="w-24 shrink-0 text-sm font-medium text-muted-foreground">{label}</span>
+      <span className="break-all text-sm">{value}</span>
     </div>
   )
 }
 
 export default function ProtectedPage() {
   return (
-    <div className="flex-1 w-full flex flex-col gap-12">
+    <div className="flex w-full flex-1 flex-col gap-12">
       {/* 인증된 사용자만 접근 가능하다는 안내 배너 */}
       <div className="w-full">
-        <div className="bg-accent text-sm p-3 px-5 rounded-md text-foreground flex gap-3 items-center">
+        <div className="flex items-center gap-3 rounded-md bg-accent p-3 px-5 text-sm text-foreground">
           <InfoIcon size="16" strokeWidth={2} />
           로그인한 사용자만 볼 수 있는 보호된 페이지입니다.
         </div>
@@ -82,8 +81,8 @@ export default function ProtectedPage() {
 
       {/* 프로필 정보 섹션 */}
       <div className="flex flex-col gap-4">
-        <h2 className="font-bold text-2xl">내 프로필</h2>
-        <div className="rounded-lg border p-6 max-w-md">
+        <h2 className="text-2xl font-bold">내 프로필</h2>
+        <div className="max-w-md rounded-lg border p-6">
           <Suspense fallback={<p className="text-sm text-muted-foreground">불러오는 중...</p>}>
             <UserProfile />
           </Suspense>
@@ -91,9 +90,9 @@ export default function ProtectedPage() {
       </div>
 
       {/* JWT Claims 디버깅 섹션 */}
-      <div className="flex flex-col gap-2 items-start">
-        <h2 className="font-bold text-2xl mb-4">JWT Claims</h2>
-        <pre className="text-xs font-mono p-3 rounded border max-h-32 overflow-auto">
+      <div className="flex flex-col items-start gap-2">
+        <h2 className="mb-4 text-2xl font-bold">JWT Claims</h2>
+        <pre className="max-h-32 overflow-auto rounded border p-3 font-mono text-xs">
           <Suspense fallback="불러오는 중...">
             <UserClaims />
           </Suspense>
