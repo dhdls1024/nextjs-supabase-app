@@ -1,43 +1,104 @@
-import { redirect } from "next/navigation";
+import { redirect } from "next/navigation"
+import { Suspense } from "react"
 
-import { createClient } from "@/lib/supabase/server";
-import { InfoIcon } from "lucide-react";
-import { FetchDataSteps } from "@/components/tutorial/fetch-data-steps";
-import { Suspense } from "react";
+import { createClient } from "@/lib/supabase/server"
+import { InfoIcon } from "lucide-react"
+import type { Profile } from "@/lib/types/database"
 
-async function UserDetails() {
-  const supabase = await createClient();
-  const { data, error } = await supabase.auth.getClaims();
+// JWT claims를 JSON으로 출력하는 컴포넌트 (디버깅용)
+async function UserClaims() {
+  const supabase = await createClient()
+  const { data, error } = await supabase.auth.getClaims()
 
   if (error || !data?.claims) {
-    redirect("/auth/login");
+    redirect("/auth/login")
   }
 
-  return JSON.stringify(data.claims, null, 2);
+  return JSON.stringify(data.claims, null, 2)
+}
+
+// profiles 테이블에서 현재 사용자 프로필을 조회해 카드 형태로 표시
+async function UserProfile() {
+  const supabase = await createClient()
+
+  // 현재 로그인한 사용자 조회
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+  if (userError || !user) {
+    redirect("/auth/login")
+  }
+
+  // profiles 테이블에서 해당 사용자 프로필 단건 조회
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", user.id)
+    .single<Profile>()
+
+  // 미설정 필드를 표시하는 헬퍼 — null/undefined면 "미설정" 반환
+  const display = (value: string | null | undefined) => value ?? "미설정"
+
+  return (
+    <div className="grid gap-3">
+      <ProfileField label="이메일" value={user.email ?? "미설정"} />
+      <ProfileField label="사용자명" value={display(profile?.username)} />
+      <ProfileField label="이름" value={display(profile?.full_name)} />
+      <ProfileField label="웹사이트" value={display(profile?.website)} />
+      <ProfileField label="소개" value={display(profile?.bio)} />
+      <ProfileField
+        label="가입일"
+        value={
+          profile?.created_at
+            ? new Date(profile.created_at).toLocaleDateString("ko-KR")
+            : "미설정"
+        }
+      />
+    </div>
+  )
+}
+
+// 프로필 필드 1행을 렌더링하는 표시 전용 컴포넌트
+function ProfileField({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex gap-4 items-start border-b pb-2 last:border-0">
+      <span className="text-sm font-medium text-muted-foreground w-24 shrink-0">
+        {label}
+      </span>
+      <span className="text-sm break-all">{value}</span>
+    </div>
+  )
 }
 
 export default function ProtectedPage() {
   return (
     <div className="flex-1 w-full flex flex-col gap-12">
+      {/* 인증된 사용자만 접근 가능하다는 안내 배너 */}
       <div className="w-full">
         <div className="bg-accent text-sm p-3 px-5 rounded-md text-foreground flex gap-3 items-center">
           <InfoIcon size="16" strokeWidth={2} />
-          This is a protected page that you can only see as an authenticated
-          user
+          로그인한 사용자만 볼 수 있는 보호된 페이지입니다.
         </div>
       </div>
+
+      {/* 프로필 정보 섹션 */}
+      <div className="flex flex-col gap-4">
+        <h2 className="font-bold text-2xl">내 프로필</h2>
+        <div className="rounded-lg border p-6 max-w-md">
+          <Suspense fallback={<p className="text-sm text-muted-foreground">불러오는 중...</p>}>
+            <UserProfile />
+          </Suspense>
+        </div>
+      </div>
+
+      {/* JWT Claims 디버깅 섹션 */}
       <div className="flex flex-col gap-2 items-start">
-        <h2 className="font-bold text-2xl mb-4">Your user details</h2>
+        <h2 className="font-bold text-2xl mb-4">JWT Claims</h2>
         <pre className="text-xs font-mono p-3 rounded border max-h-32 overflow-auto">
-          <Suspense>
-            <UserDetails />
+          <Suspense fallback="불러오는 중...">
+            <UserClaims />
           </Suspense>
         </pre>
       </div>
-      <div>
-        <h2 className="font-bold text-2xl mb-4">Next steps</h2>
-        <FetchDataSteps />
-      </div>
     </div>
-  );
+  )
 }
