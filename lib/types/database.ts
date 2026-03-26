@@ -88,6 +88,57 @@ export type Database = {
           },
         ]
       }
+      notification_preferences: {
+        Row: {
+          id: string
+          user_id: string
+          enabled: boolean
+          dday_offset: number
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          enabled?: boolean
+          dday_offset?: number
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          enabled?: boolean
+          dday_offset?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          id: string
+          user_id: string
+          endpoint: string
+          keys_p256dh: string
+          keys_auth: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          endpoint: string
+          keys_p256dh: string
+          keys_auth: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          endpoint?: string
+          keys_p256dh?: string
+          keys_auth?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
       groups: {
         Row: {
           created_at: string
@@ -375,3 +426,9 @@ export type GroupSubscriptionUpdate = {
   member_split_amounts?: Record<string, number>
   member_payment_statuses?: Record<string, "PENDING" | "PAID">
 }
+
+// push_subscriptions 테이블 Row 타입
+export type PushSubscription = Tables<"push_subscriptions">
+
+// notification_preferences 테이블 Row 타입
+export type NotificationPreference = Tables<"notification_preferences">
