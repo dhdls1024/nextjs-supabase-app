@@ -46,13 +46,13 @@ export async function updateSession(request: NextRequest) {
   const { data } = await supabase.auth.getClaims()
   const user = data?.claims
 
-  if (
-    request.nextUrl.pathname !== "/" &&
-    !user &&
-    !request.nextUrl.pathname.startsWith("/login") &&
-    !request.nextUrl.pathname.startsWith("/auth")
-  ) {
-    // no user, potentially respond by redirecting the user to the login page
+  // 공개 경로: "/" (랜딩), "/auth/*" (인증 흐름 전체)
+  // 그 외 모든 경로는 인증이 필요하다
+  const isPublicPath =
+    request.nextUrl.pathname === "/" || request.nextUrl.pathname.startsWith("/auth")
+
+  if (!user && !isPublicPath) {
+    // 인증되지 않은 사용자를 로그인 페이지로 리다이렉트한다
     const url = request.nextUrl.clone()
     url.pathname = "/auth/login"
     return NextResponse.redirect(url)
