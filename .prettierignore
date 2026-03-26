@@ -6,3 +6,7 @@ next-env.d.ts
 package-lock.json
 public/
 .env*
+.claude/
+docs/
+shrimp-data/
+shrimp-rules.md
