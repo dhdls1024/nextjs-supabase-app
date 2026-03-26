@@ -17,13 +17,19 @@
       "mcp__supabase__*",
       "mcp__supabase__apply_migration",
       "mcp__supabase__execute_sql",
-      "mcp__ide__getDiagnostics"
+      "mcp__ide__getDiagnostics",
+      "Skill(git:commit)",
+      "mcp__shrimp-task-manager__*",
+      "mcp__shrimp-task-manager__",
+      "Skill(docs:update-roadmap)"
     ],
     "deny": [],
     "ask": []
   },
   "enableAllProjectMcpServers": true,
-  "enabledMcpjsonServers": ["playwright"],
+  "enabledMcpjsonServers": [
+    "playwright"
+  ],
   "hooks": {
     "Notification": [
       {
@@ -31,7 +37,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/notification-hook.sh"
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/slack-permission.sh"
           }
         ]
       }
@@ -42,7 +48,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/stop-hook.sh"
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/slack-complete.sh"
           }
         ]
       }
