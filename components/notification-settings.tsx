@@ -166,6 +166,7 @@ export default function NotificationSettings() {
             checked={enabled}
             onCheckedChange={handleToggle}
             disabled={!initialized || loading}
+            aria-label="결제일 알림 토글"
           />
         </div>
 

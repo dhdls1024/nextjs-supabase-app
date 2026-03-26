@@ -5,6 +5,7 @@
 // useRouter().push()를 통해 각 행 클릭 시 상세 페이지로 이동
 
 import { ChevronDown, ChevronUp } from "lucide-react"
+import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 
@@ -68,8 +69,8 @@ export function CategoryFilter({ subscriptions, initialCategory }: CategoryFilte
   // initialCategory가 있으면 목록을 열고 해당 카테고리를 활성화
   const validInitial =
     initialCategory && CATEGORIES.some((c) => c.value === initialCategory) ? initialCategory : null
-  // 구독 목록 섹션 열림/닫힘 상태 (initialCategory 있으면 초기값: 열림)
-  const [isOpen, setIsOpen] = useState<boolean>(!!validInitial)
+  // 구독 목록 섹션 열림/닫힘 상태 (기본값: 열림)
+  const [isOpen, setIsOpen] = useState<boolean>(true)
   // 현재 선택된 카테고리 탭 상태 ('ALL' 또는 카테고리 value)
   const [activeCategory, setActiveCategory] = useState<string>(validInitial ?? ALL_TAB_VALUE)
   const router = useRouter()
@@ -140,10 +141,11 @@ export function CategoryFilter({ subscriptions, initialCategory }: CategoryFilte
                         {/* 로고: logo_url 있으면 이미지, 없으면 이니셜 fallback */}
                         <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-muted text-sm font-bold">
                           {sub.logo_url ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
+                            <Image
                               src={sub.logo_url}
                               alt={sub.name}
+                              width={40}
+                              height={40}
                               className="h-10 w-10 rounded-lg object-contain"
                             />
                           ) : (

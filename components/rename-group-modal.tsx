@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -69,6 +70,7 @@ export function RenameGroupModal({ groupId, currentName, trigger }: RenameGroupM
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle>그룹 이름 수정</DialogTitle>
+          <DialogDescription>새로운 그룹 이름을 입력하세요.</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-2 py-2">

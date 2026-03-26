@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -107,6 +108,7 @@ export function LinkSubscriptionModal({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>구독 연결</DialogTitle>
+          <DialogDescription>이 그룹에 연결할 구독 서비스를 선택하세요.</DialogDescription>
         </DialogHeader>
 
         {/* 구독 연결 폼 */}

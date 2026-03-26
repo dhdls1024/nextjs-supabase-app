@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -88,6 +89,9 @@ export function CreateGroupModal() {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>새 그룹 만들기</DialogTitle>
+          <DialogDescription>
+            그룹 이름을 입력하면 초대 코드가 자동으로 생성됩니다.
+          </DialogDescription>
         </DialogHeader>
 
         {/* 폼 제출 성공 시 다이얼로그 닫기 */}

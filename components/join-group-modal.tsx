@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -93,6 +94,7 @@ export function JoinGroupModal() {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>그룹 참여</DialogTitle>
+          <DialogDescription>초대 코드를 입력하여 그룹에 참여하세요.</DialogDescription>
         </DialogHeader>
 
         <JoinGroupFormInner onSuccess={() => setOpen(false)} />
