@@ -8,8 +8,8 @@ import { createClient } from "@/lib/supabase/server"
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const code = searchParams.get("code")
-  // next 파라미터가 있으면 해당 경로로, 없으면 /protected로 이동
-  const next = searchParams.get("next") ?? "/protected"
+  // next 파라미터가 있으면 해당 경로로, 없으면 /dashboard로 이동
+  const next = searchParams.get("next") ?? "/dashboard"
 
   if (!code) {
     redirect("/auth/error?error=No+code+provided")
