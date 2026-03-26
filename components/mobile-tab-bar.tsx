@@ -29,36 +29,38 @@ export default function MobileTabBar() {
 
   return (
     // fixed bottom-0 — 화면 하단에 고정, z-50으로 콘텐츠 위에 표시
-    <nav className="fixed bottom-0 left-0 right-0 z-50 flex h-16 items-center border-t bg-background md:hidden">
-      {MOBILE_TABS.map((tab) => {
-        const Icon = tab.icon
-        const isActive = pathname === tab.href
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background">
+      <div className="mx-auto flex h-16 w-full max-w-md items-center">
+        {MOBILE_TABS.map((tab) => {
+          const Icon = tab.icon
+          const isActive = pathname === tab.href
 
-        // FAB 스타일 (중앙 추가 버튼)
-        if (tab.isFab) {
+          // FAB 스타일 (중앙 추가 버튼)
+          if (tab.isFab) {
+            return (
+              <Link key={tab.href} href={tab.href} className="flex flex-1 flex-col items-center">
+                {/* -translate-y-2로 살짝 위로 돌출 */}
+                <span className="flex h-12 w-12 -translate-y-2 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg">
+                  <Icon size={22} />
+                </span>
+              </Link>
+            )
+          }
+
           return (
-            <Link key={tab.href} href={tab.href} className="flex flex-1 flex-col items-center">
-              {/* -translate-y-2로 살짝 위로 돌출 */}
-              <span className="flex h-12 w-12 -translate-y-2 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg">
-                <Icon size={22} />
-              </span>
+            <Link
+              key={tab.href}
+              href={tab.href}
+              className={`flex flex-1 flex-col items-center gap-1 py-2 text-xs transition-colors ${
+                isActive ? "text-primary" : "text-muted-foreground"
+              }`}
+            >
+              <Icon size={20} strokeWidth={isActive ? 2.5 : 1.5} />
+              <span>{tab.label}</span>
             </Link>
           )
-        }
-
-        return (
-          <Link
-            key={tab.href}
-            href={tab.href}
-            className={`flex flex-1 flex-col items-center gap-1 py-2 text-xs transition-colors ${
-              isActive ? "text-primary" : "text-muted-foreground"
-            }`}
-          >
-            <Icon size={20} strokeWidth={isActive ? 2.5 : 1.5} />
-            <span>{tab.label}</span>
-          </Link>
-        )
-      })}
+        })}
+      </div>
     </nav>
   )
 }

@@ -1,10 +1,11 @@
 // Route: /more
-// Features: 계정 정보, 알림설정, 앱 정보, 로그아웃
+// Features: 계정 정보, 테마 설정, 알림설정, 앱 정보, 로그아웃
 import { Suspense } from "react"
 
 import { LogoutButton } from "@/components/logout-button"
 import { NicknameForm } from "@/components/nickname-form"
 import NotificationSettings from "@/components/notification-settings"
+import { ThemeSwitcher } from "@/components/theme-switcher"
 import { createClient } from "@/lib/supabase/server"
 
 // 앱 버전 상수
@@ -69,7 +70,7 @@ async function AccountSection() {
 
 export default async function MorePage() {
   return (
-    <div className="mx-auto max-w-lg space-y-4 p-4">
+    <div className="space-y-4">
       {/* 계정 섹션 — Suspense로 감싸서 Supabase 비동기 호출 격리 */}
       <Suspense
         fallback={
@@ -83,6 +84,17 @@ export default async function MorePage() {
       >
         <AccountSection />
       </Suspense>
+
+      {/* 테마 설정 섹션 */}
+      <section>
+        <p className="mb-2 text-sm text-muted-foreground">화면</p>
+        <div className="rounded-xl border bg-card p-4">
+          <div className="flex items-center justify-between">
+            <span className="text-sm">테마</span>
+            <ThemeSwitcher />
+          </div>
+        </div>
+      </section>
 
       {/* 알림설정 섹션 — 상태 관리가 필요해 Client Component로 분리 */}
       <NotificationSettings />
