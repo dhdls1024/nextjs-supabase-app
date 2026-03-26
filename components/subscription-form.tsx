@@ -69,9 +69,7 @@ const SERVICE_PRESETS: Record<string, Array<{ name: string; domain: string }>> =
     { name: "Spotify", domain: "spotify.com" },
     { name: "Apple Music", domain: "music.apple.com" },
     { name: "YouTube Music", domain: "music.youtube.com" },
-    { name: "FLO", domain: "music.flo.com" },
     { name: "멜론", domain: "melon.com" },
-    { name: "벅스", domain: "music.bugs.kr" },
   ],
   OTHER: [
     { name: "YouTube Premium", domain: "youtube.com" },
