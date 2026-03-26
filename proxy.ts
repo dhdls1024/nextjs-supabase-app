@@ -17,7 +17,8 @@ export const config = {
      * - _next/image   : Next.js 이미지 최적화 API
      * - favicon.ico   : 파비콘
      * - auth/confirm  : 이메일 OTP 확인 라우트 (인증 전 접근 필요)
+     * - manifest.json, sw.js, icon-*.png, apple-touch-icon.png : PWA 정적 파일
      */
-    "/((?!_next/static|_next/image|favicon.ico|auth/confirm).*)",
+    "/((?!_next/static|_next/image|favicon.ico|auth/confirm|manifest\\.json|sw\\.js|icon-.*\\.png|apple-touch-icon\\.png).*)",
   ],
 }

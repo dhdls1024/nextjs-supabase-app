@@ -12,7 +12,7 @@ const defaultUrl = process.env.VERCEL_URL
 
 export const metadata: Metadata = {
   metadataBase: new URL(defaultUrl),
-  title: "SubTracker",
+  title: "OTT관리",
   description: "구독 서비스를 한 곳에서 통합 관리하세요",
   manifest: "/manifest.json",
   appleWebApp: {
