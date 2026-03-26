@@ -83,7 +83,7 @@ const eslintConfig = [
 
   // 검사 제외 대상
   {
-    ignores: [".next/**", "node_modules/**", "out/**", "public/**"],
+    ignores: [".next/**", "node_modules/**", "out/**", "public/**", "supabase/functions/**"],
   },
 ]
 
