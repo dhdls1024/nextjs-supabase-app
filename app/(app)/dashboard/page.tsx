@@ -3,6 +3,7 @@
 // 요약 통계(활성 구독 수, 결제 임박 수)와 카테고리별 구독 목록을 표시하는 대시보드 페이지
 // cacheComponents 환경: 데이터 조회를 Suspense 경계 안에서 처리
 
+import { CreditCard } from "lucide-react"
 import Link from "next/link"
 import { Suspense } from "react"
 
@@ -44,6 +45,21 @@ async function DashboardContent({
 
   // userId를 직접 전달하여 getUser() 중복 호출 방지
   const subscriptions = await getSubscriptionsByUserId(user.id)
+
+  // 구독이 0개일 때 빈 상태 안내 UI 표시
+  if (subscriptions.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        {/* CreditCard 아이콘 — 구독 없음 상태를 시각적으로 전달 */}
+        <CreditCard className="mb-4 h-12 w-12 text-muted-foreground" />
+        <p className="mb-1 text-lg font-semibold">구독이 없습니다.</p>
+        <p className="mb-6 text-sm text-muted-foreground">첫 번째 구독을 추가해보세요.</p>
+        <Button asChild>
+          <Link href="/subscriptions/new">+ 구독 추가</Link>
+        </Button>
+      </div>
+    )
+  }
 
   const activeCount = subscriptions.filter((s: Subscription) => s.status === "ACTIVE").length
   const urgentCount = subscriptions.filter((s: Subscription) =>

@@ -5,6 +5,7 @@
 // cacheComponents 환경: 데이터 조회를 Suspense 경계 안에서 처리
 
 import { Users } from "lucide-react"
+import Image from "next/image"
 import Link from "next/link"
 import { Suspense } from "react"
 
@@ -46,10 +47,11 @@ function GroupCard({
           <div className="flex items-center gap-2 rounded-md bg-muted/50 px-3 py-1.5">
             {/* 서비스 로고 — logo_url 있으면 이미지, 없으면 미표시 */}
             {firstSub.subscription.logo_url && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
+              <Image
                 src={firstSub.subscription.logo_url}
                 alt={firstSub.subscription.name}
+                width={16}
+                height={16}
                 className="h-4 w-4 shrink-0 rounded object-contain"
               />
             )}

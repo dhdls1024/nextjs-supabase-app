@@ -5,6 +5,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Pencil } from "lucide-react"
+import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { useEffect, useRef, useState, useTransition } from "react"
 import { Controller, useForm } from "react-hook-form"
@@ -132,10 +133,11 @@ function ServiceDropdownItem({
       onClick={() => onSelect(service)}
     >
       {/* Google Favicon API로 서비스 아이콘 표시 */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
+      <Image
         src={getFaviconUrl(service.domain)}
         alt={service.name}
+        width={24}
+        height={24}
         className="h-6 w-6 rounded object-contain"
       />
       <span>{service.name}</span>
