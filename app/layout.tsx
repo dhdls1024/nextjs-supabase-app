@@ -43,6 +43,12 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.className} antialiased`}>
+        {/* beforeinstallprompt를 React hydration 이전에 캡처 — useEffect보다 먼저 실행 */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__pwaInstallEvent=e;});`,
+          }}
+        />
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

@@ -47,7 +47,16 @@ export function PwaInstallBanner() {
       return
     }
 
-    // Android/Chrome: beforeinstallprompt 이벤트 대기
+    // layout.tsx의 인라인 스크립트가 React hydration 이전에 이벤트를 캡처해둔 경우 바로 사용
+    const cached = (window as Window & { __pwaInstallEvent?: BeforeInstallPromptEvent })
+      .__pwaInstallEvent
+    if (cached) {
+      setDeferredPrompt(cached)
+      setShowBanner(true)
+      return
+    }
+
+    // 아직 이벤트가 오지 않은 경우 리스너 대기 (fallback)
     const handler = (e: Event) => {
       e.preventDefault()
       setDeferredPrompt(e as BeforeInstallPromptEvent)
@@ -92,7 +101,7 @@ export function PwaInstallBanner() {
             ST
           </div>
           <div>
-            <p className="text-sm font-semibold">SubTracker 앱 설치</p>
+            <p className="text-sm font-semibold">OTT관리 앱 설치</p>
             <p className="text-xs text-muted-foreground">홈 화면에 추가하여 앱처럼 사용하세요</p>
           </div>
         </div>
@@ -123,7 +132,7 @@ export function PwaInstallBanner() {
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-sm font-bold text-primary-foreground">
             ST
           </div>
-          <p className="text-sm font-semibold">SubTracker 앱 설치</p>
+          <p className="text-sm font-semibold">OTT관리 앱 설치</p>
         </div>
         <p className="text-xs leading-relaxed text-muted-foreground">
           하단 공유 버튼(
