@@ -11,13 +11,15 @@ import { createClient } from "@/lib/supabase/client"
 
 interface GroupRealtimeSyncProps {
   groupId: string
+  // 현재 그룹에 연결된 구독 ID 목록 — receipts 채널 필터링에 사용
+  subscriptionIds: string[]
 }
 
 // GroupRealtimeSync: 그룹 상세 페이지에 삽입하여 변경 사항을 실시간 감지
 // - group_subscriptions: 결제 상태 변경 (PaymentStatusRealtime)
 // - group_members: 멤버 추가/퇴출 (직접 구독)
 // 변경 감지 시 router.refresh()로 Server Component 데이터를 재조회
-export function GroupRealtimeSync({ groupId }: GroupRealtimeSyncProps) {
+export function GroupRealtimeSync({ groupId, subscriptionIds }: GroupRealtimeSyncProps) {
   const router = useRouter()
 
   // 결제 상태 변경 시 페이지 데이터 갱신
@@ -52,8 +54,11 @@ export function GroupRealtimeSync({ groupId }: GroupRealtimeSyncProps) {
   }, [groupId, router])
 
   // receipts 테이블 변경 구독 — 영수증 업로드/삭제 시 페이지 갱신
-  // receipts 테이블에는 group_id 컬럼이 없어 filter 없이 전체 구독 후 router.refresh()로 갱신
+  // receipts에는 group_id 컬럼이 없으므로 subscription_id IN 필터로 현재 그룹 범위만 구독
+  // subscriptionIds가 비어있으면 구독 대상이 없으므로 채널을 생성하지 않음
   useEffect(() => {
+    if (subscriptionIds.length === 0) return
+
     const supabase = createClient()
 
     const channel = supabase
@@ -64,6 +69,8 @@ export function GroupRealtimeSync({ groupId }: GroupRealtimeSyncProps) {
           event: "*", // INSERT(업로드), DELETE(삭제) 모두 감지
           schema: "public",
           table: "receipts",
+          // Supabase Realtime in 필터 — 현재 그룹의 구독 ID만 감지
+          filter: `subscription_id=in.(${subscriptionIds.join(",")})`,
         },
         () => {
           router.refresh()
@@ -74,7 +81,7 @@ export function GroupRealtimeSync({ groupId }: GroupRealtimeSyncProps) {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [groupId, router])
+  }, [groupId, subscriptionIds, router])
 
   return (
     <div className="flex items-center justify-end">

@@ -63,7 +63,8 @@ async function GroupDetailContent({ params }: { params: Promise<{ id: string }> 
   return (
     <div className="space-y-8">
       {/* Realtime 동기화 — 결제 상태 변경 시 자동으로 페이지 데이터 갱신 */}
-      <GroupRealtimeSync groupId={id} />
+      {/* subscriptionIds: 현재 그룹의 구독 ID 목록 — receipts Realtime 필터링용 */}
+      <GroupRealtimeSync groupId={id} subscriptionIds={groupSubs.map((gs) => gs.subscription_id)} />
 
       {/* 페이지 헤더 — 초대 링크 + 그룹장 전용 이름 수정/해산 버튼 */}
       <PageHeader title={group.name} description="공유 그룹 상세 정보">
