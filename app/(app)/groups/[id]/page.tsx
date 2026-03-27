@@ -8,10 +8,10 @@ import { notFound } from "next/navigation"
 import { Suspense } from "react"
 
 import {
-  getAvailableSubscriptions,
-  getGroup,
-  getGroupMembers,
-  getGroupSubscriptions,
+  getAvailableSubscriptionsById,
+  getGroupById,
+  getGroupMembersById,
+  getGroupSubscriptionsById,
 } from "@/app/actions/group"
 import { getReceipts } from "@/app/actions/storage"
 import { DisbandGroupButton } from "@/components/disband-group-button"
@@ -32,7 +32,9 @@ async function GroupDetailContent({ params }: { params: Promise<{ id: string }> 
   // Next.js 15 async params — await로 처리
   const { id } = await params
 
-  // 현재 로그인 사용자 ID 조회
+  // getUser()를 한 번만 호출하여 userId를 4개 Action에 공유
+  // 기존 방식: 각 Action 내부에서 getUser() 4회 호출 → Auth 왕복 4회
+  // 개선 방식: 상위에서 1회 호출 후 userId 전달 → Auth 왕복 1회로 절감
   const supabase = await createClient()
   const {
     data: { user },
@@ -41,10 +43,10 @@ async function GroupDetailContent({ params }: { params: Promise<{ id: string }> 
 
   // 그룹 정보, 멤버, 공유 구독, 연결 가능한 구독을 병렬 조회
   const [group, members, groupSubs, availableSubscriptions] = await Promise.all([
-    getGroup(id),
-    getGroupMembers(id),
-    getGroupSubscriptions(id),
-    getAvailableSubscriptions(id),
+    getGroupById(id, user.id),
+    getGroupMembersById(id, user.id),
+    getGroupSubscriptionsById(id, user.id),
+    getAvailableSubscriptionsById(id, user.id),
   ])
 
   if (!group) notFound()

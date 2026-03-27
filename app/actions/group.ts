@@ -22,6 +22,34 @@ import type { ActionResult } from "./types"
 // 그룹 조회
 // =============================================
 
+// userId를 직접 받아 getUser() 호출 생략 — 페이지에서 이미 인증 확인된 경우 사용
+// 내부적으로 group_members → group_subscriptions 2단계 쿼리를 실행함
+// (Supabase 현재 스키마 구조상 단일 쿼리로 병합 불가)
+export async function getAllGroupSubscriptionsForUserById(
+  userId: string
+): Promise<(GroupSubscription & { subscription: Subscription | null })[]> {
+  const supabase = await createClient()
+
+  // 사용자가 속한 그룹 ID 목록 조회
+  const { data: memberRows } = await supabase
+    .from("group_members")
+    .select("group_id")
+    .eq("user_id", userId)
+
+  if (!memberRows || memberRows.length === 0) return []
+
+  const groupIds = memberRows.map((m) => m.group_id)
+
+  // 해당 그룹들의 공유 구독을 한 번에 조회 (N+1 제거)
+  const { data, error } = await supabase
+    .from("group_subscriptions")
+    .select("*, subscription:subscriptions(*)")
+    .in("group_id", groupIds)
+
+  if (error || !data) return []
+  return data as (GroupSubscription & { subscription: Subscription | null })[]
+}
+
 // 현재 로그인 사용자가 속한 모든 그룹의 공유 구독을 한 번에 조회
 // 그룹 목록 페이지 N+1 쿼리 제거용 — 각 GroupCard가 개별 조회하는 대신 일괄 조회
 export async function getAllGroupSubscriptionsForUser(): Promise<
@@ -34,39 +62,18 @@ export async function getAllGroupSubscriptionsForUser(): Promise<
   } = await supabase.auth.getUser()
   if (!user) return []
 
-  // 사용자가 속한 그룹 ID 목록 조회 후 해당 그룹들의 구독을 한 번에 조회
-  const { data: memberRows } = await supabase
-    .from("group_members")
-    .select("group_id")
-    .eq("user_id", user.id)
-
-  if (!memberRows || memberRows.length === 0) return []
-
-  const groupIds = memberRows.map((m) => m.group_id)
-
-  const { data, error } = await supabase
-    .from("group_subscriptions")
-    .select("*, subscription:subscriptions(*)")
-    .in("group_id", groupIds)
-
-  if (error || !data) return []
-  return data as (GroupSubscription & { subscription: Subscription | null })[]
+  return getAllGroupSubscriptionsForUserById(user.id)
 }
 
-// 현재 로그인 사용자가 속한 그룹 목록 조회
-// group_members를 경유해 groups JOIN
-export async function getGroups(): Promise<Group[]> {
+// userId를 직접 받아 getUser() 호출 생략 — 페이지에서 이미 인증 확인된 경우 사용
+// 여러 Action을 병렬 호출할 때 getUser() 중복 호출을 방지하여 성능 최적화
+export async function getGroupsByUserId(userId: string): Promise<Group[]> {
   const supabase = await createClient()
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return []
 
   const { data, error } = await supabase
     .from("group_members")
     .select("groups(*)")
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
 
   if (error || !data) return []
 
@@ -82,6 +89,30 @@ export async function getGroups(): Promise<Group[]> {
   return groups
 }
 
+// 현재 로그인 사용자가 속한 그룹 목록 조회
+// group_members를 경유해 groups JOIN
+export async function getGroups(): Promise<Group[]> {
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return []
+
+  return getGroupsByUserId(user.id)
+}
+
+// 특정 그룹 단건 조회 (userId 인자 버전 — getUser() 중복 호출 방지)
+// _userId: 사용되지 않지만 호출 시그니처 통일을 위해 유지 (RLS가 서버에서 인가 처리)
+export async function getGroupById(groupId: string, _userId: string): Promise<Group | null> {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase.from("groups").select("*").eq("id", groupId).single()
+
+  if (error || !data) return null
+  return data as Group
+}
+
 // 특정 그룹 단건 조회
 export async function getGroup(groupId: string): Promise<Group | null> {
   const supabase = await createClient()
@@ -91,23 +122,17 @@ export async function getGroup(groupId: string): Promise<Group | null> {
   } = await supabase.auth.getUser()
   if (!user) return null
 
-  const { data, error } = await supabase.from("groups").select("*").eq("id", groupId).single()
-
-  if (error || !data) return null
-  return data as Group
+  return getGroupById(groupId, user.id)
 }
 
-// 그룹 멤버 목록 조회 — profiles JOIN으로 displayName 포함
+// 그룹 멤버 목록 조회 (userId 인자 버전 — getUser() 중복 호출 방지)
 // displayName 우선순위: nickname > email > user_id
-export async function getGroupMembers(
-  groupId: string
+// _userId: 사용되지 않지만 호출 시그니처 통일을 위해 유지 (RLS가 서버에서 인가 처리)
+export async function getGroupMembersById(
+  groupId: string,
+  _userId: string
 ): Promise<(GroupMember & { displayName: string })[]> {
   const supabase = await createClient()
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return []
 
   const { data, error } = await supabase
     .from("group_members")
@@ -123,6 +148,38 @@ export async function getGroupMembers(
   })
 }
 
+// 그룹 멤버 목록 조회 — profiles JOIN으로 displayName 포함
+// displayName 우선순위: nickname > email > user_id
+export async function getGroupMembers(
+  groupId: string
+): Promise<(GroupMember & { displayName: string })[]> {
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return []
+
+  return getGroupMembersById(groupId, user.id)
+}
+
+// 그룹의 공유 구독 목록 조회 (userId 인자 버전 — getUser() 중복 호출 방지)
+// _userId: 사용되지 않지만 호출 시그니처 통일을 위해 유지 (RLS가 서버에서 인가 처리)
+export async function getGroupSubscriptionsById(
+  groupId: string,
+  _userId: string
+): Promise<(GroupSubscription & { subscription: Subscription | null })[]> {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from("group_subscriptions")
+    .select("*, subscription:subscriptions(*)")
+    .eq("group_id", groupId)
+
+  if (error || !data) return []
+  return data as (GroupSubscription & { subscription: Subscription | null })[]
+}
+
 // 그룹의 공유 구독 목록 조회 (구독 상세 포함)
 export async function getGroupSubscriptions(
   groupId: string
@@ -134,13 +191,25 @@ export async function getGroupSubscriptions(
   } = await supabase.auth.getUser()
   if (!user) return []
 
-  const { data, error } = await supabase
-    .from("group_subscriptions")
-    .select("*, subscription:subscriptions(*)")
-    .eq("group_id", groupId)
+  return getGroupSubscriptionsById(groupId, user.id)
+}
 
-  if (error || !data) return []
-  return data as (GroupSubscription & { subscription: Subscription | null })[]
+// 현재 사용자가 연결 가능한 구독 목록 (userId 인자 버전 — getUser() 중복 호출 방지)
+// 두 쿼리를 Promise.all로 병렬 실행 후 메모리에서 필터링 — waterfall 제거
+export async function getAvailableSubscriptionsById(
+  groupId: string,
+  userId: string
+): Promise<Subscription[]> {
+  const supabase = await createClient()
+
+  // 사용자 구독 전체 + 이미 연결된 구독 ID를 병렬 조회
+  const [{ data: allSubs }, { data: linked }] = await Promise.all([
+    supabase.from("subscriptions").select("*").eq("user_id", userId),
+    supabase.from("group_subscriptions").select("subscription_id").eq("group_id", groupId),
+  ])
+
+  const linkedIds = new Set((linked ?? []).map((l) => l.subscription_id))
+  return (allSubs ?? []).filter((s) => !linkedIds.has(s.id)) as Subscription[]
 }
 
 // 현재 사용자가 연결 가능한 구독 목록 (그룹에 아직 연결되지 않은 것만)
@@ -153,14 +222,7 @@ export async function getAvailableSubscriptions(groupId: string): Promise<Subscr
   } = await supabase.auth.getUser()
   if (!user) return []
 
-  // 사용자 구독 전체 + 이미 연결된 구독 ID를 병렬 조회
-  const [{ data: allSubs }, { data: linked }] = await Promise.all([
-    supabase.from("subscriptions").select("*").eq("user_id", user.id),
-    supabase.from("group_subscriptions").select("subscription_id").eq("group_id", groupId),
-  ])
-
-  const linkedIds = new Set((linked ?? []).map((l) => l.subscription_id))
-  return (allSubs ?? []).filter((s) => !linkedIds.has(s.id)) as Subscription[]
+  return getAvailableSubscriptionsById(groupId, user.id)
 }
 
 // =============================================

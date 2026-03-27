@@ -9,13 +9,14 @@ import Image from "next/image"
 import Link from "next/link"
 import { Suspense } from "react"
 
-import { getAllGroupSubscriptionsForUser, getGroups } from "@/app/actions/group"
+import { getAllGroupSubscriptionsForUserById, getGroupsByUserId } from "@/app/actions/group"
 import { CreateGroupModal } from "@/components/create-group-modal"
 import { JoinGroupModal } from "@/components/join-group-modal"
 import { PageHeader } from "@/components/page-header"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { createClient } from "@/lib/supabase/server"
 import type { Group, GroupSubscription, Subscription } from "@/lib/types/database"
 
 // 개별 그룹 카드 컴포넌트 — 상위에서 조회한 groupSubs를 props로 받아 N+1 쿼리 제거
@@ -53,6 +54,8 @@ function GroupCard({
                 width={16}
                 height={16}
                 className="h-4 w-4 shrink-0 rounded object-contain"
+                // 그룹 카드 이미지는 뷰포트 밖일 수 있으므로 lazy 로딩
+                loading="lazy"
               />
             )}
             <span className="flex-1 truncate text-sm font-medium">
@@ -80,9 +83,20 @@ function GroupCard({
 
 // 그룹 목록을 조회하고 렌더링하는 내부 Server Component
 // Suspense 경계 안에서 실행되어 cacheComponents와 호환됨
-// getGroups + getAllGroupSubscriptionsForUser를 병렬 조회하여 N+1 쿼리 제거
+// getUser() 1회 호출 후 userId를 두 쿼리에 전달 — Auth 왕복 2회 → 1회 절감
 async function GroupsContent() {
-  const [groups, allGroupSubs] = await Promise.all([getGroups(), getAllGroupSubscriptionsForUser()])
+  // getUser()를 한 번만 호출하여 userId를 직접 전달
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return null
+
+  // userId를 공유하여 두 Action의 내부 getUser() 호출을 제거
+  const [groups, allGroupSubs] = await Promise.all([
+    getGroupsByUserId(user.id),
+    getAllGroupSubscriptionsForUserById(user.id),
+  ])
 
   if (groups.length === 0) {
     return (
