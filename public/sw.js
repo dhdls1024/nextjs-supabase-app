@@ -90,6 +90,14 @@ self.addEventListener("fetch", (event) => {
   // GET 요청만 캐시 처리 (POST 등 변경 요청은 항상 네트워크)
   if (request.method !== "GET") return
 
+  // Supabase Storage 공개 이미지 — BYPASS_PATTERNS 검사 전에 먼저 처리
+  // logos 버킷처럼 공개(public) 경로의 이미지는 Cache-First로 캐싱
+  // receipts 버킷은 Signed URL(/sign/ 또는 token= 쿼리)이므로 캐싱 제외
+  if (isPublicStorageRequest(url)) {
+    event.respondWith(cacheFirstStrategy(request, STATIC_CACHE))
+    return
+  }
+
   // 제외 패턴에 해당하는 요청은 캐시 없이 네트워크로 직접 전달
   const shouldBypass = BYPASS_PATTERNS.some((pattern) => pattern.test(url.href))
   if (shouldBypass) return
@@ -126,6 +134,22 @@ self.addEventListener("fetch", (event) => {
     return
   }
 })
+
+// =============================================
+// Supabase Storage 공개 이미지 여부 판별
+// 조건: supabase.co 도메인 + /storage/v1/object/public/ 경로
+//       + Signed URL이 아닐 것 (sign 경로 없음 & token 쿼리 없음)
+// 이유: receipts 버킷은 비공개(Signed URL)이므로 캐싱하면 권한 우회 가능
+// =============================================
+function isPublicStorageRequest(url) {
+  const isSupabaseDomain = url.hostname.includes("supabase.co")
+  const isPublicPath = url.pathname.includes("/storage/v1/object/public/")
+  // Signed URL 패턴 — 비공개 버킷 접근용이므로 캐싱 제외
+  const isSignedPath = url.pathname.includes("/storage/v1/object/sign/")
+  const hasTokenParam = url.searchParams.has("token")
+
+  return isSupabaseDomain && isPublicPath && !isSignedPath && !hasTokenParam
+}
 
 // =============================================
 // Cache-First 전략
