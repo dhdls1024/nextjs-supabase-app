@@ -5,6 +5,7 @@
 "use client"
 
 import { Plus } from "lucide-react"
+import Image from "next/image"
 
 import { AmountDisplay } from "@/components/amount-display"
 import { LinkSubscriptionModal } from "@/components/link-subscription-modal"
@@ -95,13 +96,15 @@ export function GroupSubscriptionTable({
               <TableRow key={gs.id}>
                 <TableCell>
                   <div className="flex items-center gap-2">
-                    {/* 서비스 로고 — logo_url 있으면 이미지, 없으면 미표시 */}
+                    {/* 서비스 로고 — next/image로 최적화된 이미지 렌더링 */}
                     {gs.subscription?.logo_url && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
+                      <Image
                         src={gs.subscription.logo_url}
-                        alt={gs.subscription.name}
+                        alt={gs.subscription.name ?? ""}
+                        width={16}
+                        height={16}
                         className="h-4 w-4 shrink-0 rounded object-contain"
+                        loading="lazy"
                       />
                     )}
                     {gs.subscription?.name ?? "-"}
