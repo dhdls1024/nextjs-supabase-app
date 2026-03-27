@@ -18,7 +18,9 @@ const ALLOWED_FILE_TYPES = ["image/jpeg", "image/png", "application/pdf"]
 const SIGNED_URL_EXPIRES_IN = 60
 
 // 특정 구독의 영수증 목록 조회
-// userId를 인자로 받아 Auth 왕복 호출을 제거 — 호출부에서 1회만 getUser() 수행
+// userId는 Auth 왕복 제거 목적으로만 사용 (호출부에서 getUser() 1회 수행 후 전달)
+// 실제 소유권 검증은 Supabase RLS 정책이 담당 — 쿠키 기반 클라이언트의 인증 정보로
+// 해당 사용자가 접근 가능한 행만 반환됨
 export async function getReceipts(subscriptionId: string, userId: string): Promise<Receipt[]> {
   if (!userId) return []
 
