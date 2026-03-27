@@ -28,7 +28,7 @@ import { CATEGORIES } from "@/lib/types/index"
 
 // recharts는 약 300KB 라이브러리 — dynamic import로 초기 번들에서 분리
 // analytics 페이지 진입 시에만 로드되도록 지연 로딩 적용
-// ssr: false — recharts는 브라우저 DOM에 의존하므로 서버 렌더링 불필요
+// analytics-charts.tsx가 이미 "use client"이므로 ssr: false 불필요
 const AnalyticsCharts = dynamic(
   () => import("@/components/analytics-charts").then((m) => ({ default: m.AnalyticsCharts })),
   {
@@ -36,7 +36,6 @@ const AnalyticsCharts = dynamic(
     loading: () => (
       <div className="h-[300px] w-full animate-pulse rounded-lg bg-muted" aria-hidden="true" />
     ),
-    ssr: false,
   }
 )
 
