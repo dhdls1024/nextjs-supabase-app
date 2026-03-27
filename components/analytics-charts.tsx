@@ -58,17 +58,19 @@ function CategoryBarChart({ data }: { data: CategoryStat[] }) {
           {/* Y축: 만 단위 축약 표시 */}
           <YAxis tickFormatter={formatYAxis} tick={{ fontSize: 12 }} width={48} />
           {/* contentStyle: 다크모드에서 배경/글자색 명시 — Recharts 툴팁은 CSS 변수를 읽지 못해 인라인 스타일 필요 */}
+          {/* cursor={false}: 터치 시 흰 박스 오버레이 및 반투명 막대 넘침 현상 완전 제거 */}
           <Tooltip
             formatter={(value) => [formatTooltipValue(value), "월 지출"]}
+            cursor={false}
             contentStyle={{
-              backgroundColor: "hsl(var(--card))",
-              borderColor: "hsl(var(--border))",
-              color: "hsl(var(--foreground))",
+              backgroundColor: "#1a1a1a",
+              borderColor: "rgba(255,255,255,0.15)",
+              color: "#ffffff",
               borderRadius: "8px",
               fontSize: "13px",
             }}
-            labelStyle={{ color: "hsl(var(--foreground))", fontWeight: 600 }}
-            itemStyle={{ color: "hsl(var(--foreground))" }}
+            labelStyle={{ color: "#ffffff", fontWeight: 600 }}
+            itemStyle={{ color: "#e0e0e0" }}
           />
           <Legend />
           {/* 바 색상: CSS 변수로 테마 연동 */}
