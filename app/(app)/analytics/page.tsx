@@ -4,13 +4,13 @@
 // cacheComponents 환경: 데이터 조회를 Suspense 경계 안에서 처리
 // View: category_monthly_stats 사용
 
+import dynamic from "next/dynamic"
 import Link from "next/link"
 import { Suspense } from "react"
 
 import { getCategoryMonthlyStatsByUserId } from "@/app/actions/analytics"
 import { getSubscriptionsByUserId } from "@/app/actions/subscription"
 import { AmountDisplay } from "@/components/amount-display"
-import { AnalyticsCharts } from "@/components/analytics-charts"
 import { PageHeader } from "@/components/page-header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
@@ -25,6 +25,20 @@ import {
 import { createClient } from "@/lib/supabase/server"
 import type { Subscription } from "@/lib/types/database"
 import { CATEGORIES } from "@/lib/types/index"
+
+// recharts는 약 300KB 라이브러리 — dynamic import로 초기 번들에서 분리
+// analytics 페이지 진입 시에만 로드되도록 지연 로딩 적용
+// ssr: false — recharts는 브라우저 DOM에 의존하므로 서버 렌더링 불필요
+const AnalyticsCharts = dynamic(
+  () => import("@/components/analytics-charts").then((m) => ({ default: m.AnalyticsCharts })),
+  {
+    // 차트 로딩 중 스켈레톤 표시 — CLS(Cumulative Layout Shift) 방지
+    loading: () => (
+      <div className="h-[300px] w-full animate-pulse rounded-lg bg-muted" aria-hidden="true" />
+    ),
+    ssr: false,
+  }
+)
 
 // 분석 데이터를 조회하고 렌더링하는 내부 Server Component
 // Suspense 경계 안에서 실행되어 cacheComponents와 호환됨
@@ -105,7 +119,7 @@ async function AnalyticsContent() {
         </CardContent>
       </Card>
 
-      {/* Recharts 차트 — 클라이언트 컴포넌트로 위임 */}
+      {/* Recharts 차트 — dynamic import로 지연 로딩 (초기 번들 분리) */}
       <AnalyticsCharts categoryStats={categoryStats} />
 
       <Separator />
@@ -151,10 +165,21 @@ export default function AnalyticsPage() {
     <div className="space-y-8">
       <PageHeader title="지출 분석" description="구독 서비스별 지출 현황을 분석합니다." />
 
-      {/* Suspense 경계 — cacheComponents와 호환되도록 데이터 조회를 감쌈 */}
+      {/* Suspense 경계 — 스켈레톤 fallback으로 CLS(레이아웃 이동) 방지 */}
       <Suspense
         fallback={
-          <div className="py-8 text-center text-sm text-muted-foreground">불러오는 중...</div>
+          <div className="space-y-6" aria-hidden="true">
+            {/* 총 지출 카드 스켈레톤 */}
+            <div className="h-20 animate-pulse rounded-xl bg-muted" />
+            {/* 차트 영역 스켈레톤 — 실제 차트 높이(300px)와 동일 */}
+            <div className="h-[300px] animate-pulse rounded-lg bg-muted" />
+            {/* 테이블 스켈레톤 */}
+            <div className="space-y-3">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="h-10 animate-pulse rounded bg-muted" />
+              ))}
+            </div>
+          </div>
         }
       >
         <AnalyticsContent />

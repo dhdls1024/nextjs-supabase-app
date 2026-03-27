@@ -108,10 +108,20 @@ export default function DashboardPage({
         </Button>
       </div>
 
-      {/* Suspense 경계 — cacheComponents와 호환되도록 데이터 조회를 감쌈 */}
+      {/* Suspense 경계 — 스켈레톤 fallback으로 CLS(레이아웃 이동) 방지 */}
       <Suspense
         fallback={
-          <div className="py-8 text-center text-sm text-muted-foreground">불러오는 중...</div>
+          // 실제 콘텐츠와 유사한 높이의 스켈레톤으로 레이아웃 안정성 확보
+          <div className="space-y-4" aria-hidden="true">
+            <div className="h-14 animate-pulse rounded-lg bg-muted" />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="h-20 animate-pulse rounded-xl bg-muted" />
+              <div className="h-20 animate-pulse rounded-xl bg-muted" />
+            </div>
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-24 animate-pulse rounded-lg bg-muted" />
+            ))}
+          </div>
         }
       >
         <DashboardContent searchParams={searchParams} />

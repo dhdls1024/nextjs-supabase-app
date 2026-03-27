@@ -3,10 +3,15 @@
   "short_name": "OTT관리",
   "description": "구독 서비스를 한 곳에서 통합 관리하세요",
   "start_url": "/dashboard",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "background_color": "#ffffff",
   "theme_color": "#000000",
   "orientation": "portrait",
+  "categories": ["utilities", "finance"],
+  "lang": "ko",
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/icon-192x192.png",
@@ -31,6 +36,22 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "구독 추가",
+      "short_name": "추가",
+      "description": "새 구독 서비스 추가",
+      "url": "/subscriptions/new",
+      "icons": [{ "src": "/icon-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "대시보드",
+      "short_name": "구독",
+      "description": "구독 목록 보기",
+      "url": "/dashboard",
+      "icons": [{ "src": "/icon-192x192.png", "sizes": "192x192" }]
     }
   ]
 }

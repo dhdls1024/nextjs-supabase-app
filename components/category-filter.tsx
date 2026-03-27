@@ -147,6 +147,8 @@ export function CategoryFilter({ subscriptions, initialCategory }: CategoryFilte
                               width={40}
                               height={40}
                               className="h-10 w-10 rounded-lg object-contain"
+                              // 뷰포트 밖 이미지는 lazy 로딩으로 초기 로드 개선
+                              loading="lazy"
                             />
                           ) : (
                             sub.name.slice(0, 1)
