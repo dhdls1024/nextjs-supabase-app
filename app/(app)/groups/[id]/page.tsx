@@ -55,7 +55,10 @@ async function GroupDetailContent({ params }: { params: Promise<{ id: string }> 
   const isOwner = group.owner_id === user.id
 
   // 각 공유 구독의 영수증 목록을 병렬 조회
-  const receiptsPerSub = await Promise.all(groupSubs.map((gs) => getReceipts(gs.subscription_id)))
+  // userId를 전달하여 Auth 왕복 N회 → 0회로 절감
+  const receiptsPerSub = await Promise.all(
+    groupSubs.map((gs) => getReceipts(gs.subscription_id, user.id))
+  )
 
   return (
     <div className="space-y-8">

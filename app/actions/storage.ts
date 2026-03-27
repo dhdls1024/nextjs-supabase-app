@@ -18,13 +18,11 @@ const ALLOWED_FILE_TYPES = ["image/jpeg", "image/png", "application/pdf"]
 const SIGNED_URL_EXPIRES_IN = 60
 
 // 특정 구독의 영수증 목록 조회
-export async function getReceipts(subscriptionId: string): Promise<Receipt[]> {
-  const supabase = await createClient()
+// userId를 인자로 받아 Auth 왕복 호출을 제거 — 호출부에서 1회만 getUser() 수행
+export async function getReceipts(subscriptionId: string, userId: string): Promise<Receipt[]> {
+  if (!userId) return []
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return []
+  const supabase = await createClient()
 
   const { data, error } = await supabase
     .from("receipts")

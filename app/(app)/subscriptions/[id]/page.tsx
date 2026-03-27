@@ -11,14 +11,26 @@ import { getSubscription } from "@/app/actions/subscription"
 import { PageHeader } from "@/components/page-header"
 import { ReceiptSection } from "@/components/receipt-section"
 import { SubscriptionEditForm } from "@/components/subscription-edit-form"
+import { createClient } from "@/lib/supabase/server"
 
 // 구독 데이터를 조회하고 폼을 렌더링하는 내부 Server Component
 // Suspense 경계 안에서 실행되어 cacheComponents와 호환됨
 async function SubscriptionDetailContent({ params }: { params: Promise<{ id: string }> }) {
   // Next.js 15: params는 Promise이므로 반드시 await 필요
   const { id } = await params
+
+  // getUser()를 1회만 호출하여 userId를 하위 Action에 공유
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) notFound()
+
   // 구독 정보와 영수증 목록을 병렬로 조회하여 성능 최적화
-  const [subscription, receipts] = await Promise.all([getSubscription(id), getReceipts(id)])
+  const [subscription, receipts] = await Promise.all([
+    getSubscription(id),
+    getReceipts(id, user.id),
+  ])
   if (!subscription) notFound()
 
   return (
