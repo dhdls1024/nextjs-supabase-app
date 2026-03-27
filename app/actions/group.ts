@@ -23,31 +23,26 @@ import type { ActionResult } from "./types"
 // =============================================
 
 // userId를 직접 받아 getUser() 호출 생략 — 페이지에서 이미 인증 확인된 경우 사용
-// 내부적으로 group_members → group_subscriptions 2단계 쿼리를 실행함
-// (Supabase 현재 스키마 구조상 단일 쿼리로 병합 불가)
+// groups 테이블을 매개로 group_members와 group_subscriptions를 단일 쿼리로 조회
+// group_subscriptions -> groups(!inner) -> group_members(!inner) 경로로 JOIN
 export async function getAllGroupSubscriptionsForUserById(
   userId: string
 ): Promise<(GroupSubscription & { subscription: Subscription | null })[]> {
   const supabase = await createClient()
 
-  // 사용자가 속한 그룹 ID 목록 조회
-  const { data: memberRows } = await supabase
-    .from("group_members")
-    .select("group_id")
-    .eq("user_id", userId)
-
-  if (!memberRows || memberRows.length === 0) return []
-
-  const groupIds = memberRows.map((m) => m.group_id)
-
-  // 해당 그룹들의 공유 구독을 한 번에 조회 (N+1 제거)
+  // groups를 매개로 group_members와 inner join하여 사용자가 속한 그룹의 구독만 필터링
+  // !inner를 사용해 조건에 맞는 행만 반환 (LEFT JOIN이 아닌 INNER JOIN)
   const { data, error } = await supabase
     .from("group_subscriptions")
-    .select("*, subscription:subscriptions(*)")
-    .in("group_id", groupIds)
+    .select("*, subscription:subscriptions(*), group:groups!inner(group_members!inner(user_id))")
+    .eq("group.group_members.user_id", userId)
 
   if (error || !data) return []
-  return data as (GroupSubscription & { subscription: Subscription | null })[]
+
+  // 중첩된 group 관계 데이터를 제거하고 기존 반환 타입과 동일하게 평탄화
+  return data.map(({ group: _group, ...rest }) => rest) as (GroupSubscription & {
+    subscription: Subscription | null
+  })[]
 }
 
 // 현재 로그인 사용자가 속한 모든 그룹의 공유 구독을 한 번에 조회
