@@ -2,9 +2,10 @@
 
 // 구독 Server Actions
 // createClient는 매 요청마다 새로 생성 (Fluid compute 환경 대응)
-import { revalidatePath } from "next/cache"
+import { revalidatePath, revalidateTag } from "next/cache"
 
 import { createClient } from "@/lib/supabase/server"
+import { ANALYTICS_CACHE_TTL } from "@/lib/types"
 import type { Subscription, SubscriptionInsert, SubscriptionUpdate } from "@/lib/types/database"
 
 import type { ActionResult } from "./types"
@@ -90,6 +91,8 @@ export async function createSubscription(
   // 대시보드, 분석 페이지 캐시 갱신
   revalidatePath("/dashboard")
   revalidatePath("/analytics")
+  // unstable_cache 태그 무효화 — analytics 통계 캐시를 즉시 삭제하여 최신 데이터 반영
+  revalidateTag(`analytics-${user.id}`, { expire: ANALYTICS_CACHE_TTL })
   return { success: true, data: data as Subscription }
 }
 
@@ -120,6 +123,8 @@ export async function updateSubscription(
   revalidatePath("/dashboard")
   revalidatePath(`/subscriptions/${id}`)
   revalidatePath("/analytics")
+  // unstable_cache 태그 무효화 — analytics 통계 캐시를 즉시 삭제하여 최신 데이터 반영
+  revalidateTag(`analytics-${user.id}`, { expire: ANALYTICS_CACHE_TTL })
   return { success: true, data: data as Subscription }
 }
 
@@ -157,5 +162,7 @@ export async function deleteSubscription(id: string): Promise<ActionResult> {
 
   revalidatePath("/dashboard")
   revalidatePath("/analytics")
+  // unstable_cache 태그 무효화 — analytics 통계 캐시를 즉시 삭제하여 최신 데이터 반영
+  revalidateTag(`analytics-${user.id}`, { expire: ANALYTICS_CACHE_TTL })
   return { success: true, data: undefined }
 }

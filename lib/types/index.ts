@@ -49,3 +49,7 @@ export const SUBSCRIPTION_STATUSES = [
   { value: "PAUSED", label: "일시정지" },
   { value: "CANCELLED", label: "해지" },
 ] as const
+
+// analytics 캐시 TTL (초) — 통계 데이터는 변경 빈도가 낮으므로 5분 캐시 적용
+// "use server" 파일에서 상수 export가 금지되므로 이 파일로 분리
+export const ANALYTICS_CACHE_TTL = 300
