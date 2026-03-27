@@ -7,7 +7,7 @@ import { notFound } from "next/navigation"
 import { Suspense } from "react"
 
 import { getReceipts } from "@/app/actions/storage"
-import { getSubscription } from "@/app/actions/subscription"
+import { getSubscriptionById } from "@/app/actions/subscription"
 import { PageHeader } from "@/components/page-header"
 import { ReceiptSection } from "@/components/receipt-section"
 import { SubscriptionEditForm } from "@/components/subscription-edit-form"
@@ -28,7 +28,7 @@ async function SubscriptionDetailContent({ params }: { params: Promise<{ id: str
 
   // 구독 정보와 영수증 목록을 병렬로 조회하여 성능 최적화
   const [subscription, receipts] = await Promise.all([
-    getSubscription(id),
+    getSubscriptionById(id, user.id),
     getReceipts(id, user.id),
   ])
   if (!subscription) notFound()

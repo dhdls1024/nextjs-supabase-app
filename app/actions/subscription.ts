@@ -67,6 +67,25 @@ export async function getSubscription(id: string): Promise<Subscription | null> 
   return data as Subscription
 }
 
+// userId를 직접 받아 getUser() Auth 왕복을 생략하는 단건 조회
+// 호출부에서 이미 인증 확인된 경우 사용 (성능 최적화)
+export async function getSubscriptionById(
+  id: string,
+  userId: string
+): Promise<Subscription | null> {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from("subscriptions")
+    .select("*")
+    .eq("id", id)
+    .eq("user_id", userId)
+    .single()
+
+  if (error || !data) return null
+  return data as Subscription
+}
+
 // 구독 생성
 export async function createSubscription(
   input: Omit<SubscriptionInsert, "user_id">
