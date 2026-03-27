@@ -13,6 +13,13 @@ const STATIC_CACHE = `subtracker-static-${CACHE_VERSION}`
 // 페이지 캐시 이름 — HTML 페이지 (Stale-While-Revalidate)
 const PAGE_CACHE = `subtracker-pages-${CACHE_VERSION}`
 
+// RSC 데이터 캐시 이름 — /_next/data/ 페이로드 (Stale-While-Revalidate)
+// 인증된 사용자 데이터이므로 별도 캐시로 분리해 버전 관리
+const RSC_CACHE = `subtracker-rsc-${CACHE_VERSION}`
+
+// RSC 캐시 최대 항목 수 — 페이지마다 캐시가 누적되므로 상한을 둠
+const RSC_CACHE_MAX_ENTRIES = 20
+
 // 사전 캐싱할 App Shell 자산 목록
 // 앱 최초 진입 시 오프라인에서도 기본 UI를 표시할 수 있도록 함
 const PRECACHE_ASSETS = [
@@ -25,11 +32,11 @@ const PRECACHE_ASSETS = [
 
 // 캐시 대상에서 제외할 경로 패턴
 // Supabase API, Next.js 내부 API, 인증 경로는 항상 네트워크에서 가져옴
+// /_next/data/ 는 별도 RSC 전략으로 처리하므로 이 목록에서 제외
 const BYPASS_PATTERNS = [
-  /supabase\.co/,         // Supabase API
-  /\/auth\//,             // 인증 흐름
-  /\/_next\/data\//,      // Next.js RSC 데이터 요청
-  /\/api\//,              // API 라우트
+  /supabase\.co/,   // Supabase API — 인증 토큰이 포함된 동적 요청
+  /\/auth\//,       // 인증 흐름 — 세션 상태 변경이 빈번함
+  /\/api\//,        // API 라우트 — 서버 사이드 로직 포함
 ]
 
 // =============================================
@@ -60,8 +67,13 @@ self.addEventListener("activate", (event) => {
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames
-          // 현재 버전이 아닌 캐시는 모두 삭제
-          .filter((name) => name !== STATIC_CACHE && name !== PAGE_CACHE)
+          // 현재 버전이 아닌 캐시는 모두 삭제 (RSC_CACHE 포함)
+          .filter(
+            (name) =>
+              name !== STATIC_CACHE &&
+              name !== PAGE_CACHE &&
+              name !== RSC_CACHE
+          )
           .map((name) => caches.delete(name))
       )
     })
@@ -81,6 +93,15 @@ self.addEventListener("fetch", (event) => {
   // 제외 패턴에 해당하는 요청은 캐시 없이 네트워크로 직접 전달
   const shouldBypass = BYPASS_PATTERNS.some((pattern) => pattern.test(url.href))
   if (shouldBypass) return
+
+  // RSC 데이터 페이로드 — Stale-While-Revalidate 전략
+  // Next.js 15 App Router는 /_next/data/ 대신 ?_rsc= 쿼리 파라미터로 RSC 페이로드 전송
+  // 재방문 시 캐시된 데이터를 즉시 보여주고 백그라운드에서 최신 데이터로 갱신
+  // GET 요청만 대상 (POST는 이미 위에서 return됨)
+  if (url.searchParams.has("_rsc")) {
+    event.respondWith(staleWhileRevalidateRsc(request, RSC_CACHE))
+    return
+  }
 
   // _next/static: 정적 자산 — Cache-First 전략
   // 한 번 캐시되면 버전이 바뀔 때까지 네트워크 요청 없음
@@ -155,6 +176,44 @@ async function staleWhileRevalidate(request, cacheName) {
   // 캐시가 있으면 즉시 반환 (사용자는 이전 버전을 바로 봄)
   // 캐시가 없으면 네트워크 응답을 기다림 (최초 방문 또는 캐시 만료)
   return cached ?? networkPromise
+}
+
+// =============================================
+// RSC 캐시 항목 수 제한 — 오래된 항목부터 삭제
+// 인증된 사용자 데이터가 누적되는 것을 방지하기 위해 LRU 방식으로 상한 유지
+// =============================================
+async function trimRscCache(cache) {
+  const keys = await cache.keys()
+  if (keys.length <= RSC_CACHE_MAX_ENTRIES) return
+
+  // 초과분만큼 가장 오래된 항목(앞쪽)을 삭제
+  const deleteCount = keys.length - RSC_CACHE_MAX_ENTRIES
+  await Promise.all(keys.slice(0, deleteCount).map((key) => cache.delete(key)))
+}
+
+// =============================================
+// RSC 전용 Stale-While-Revalidate 전략
+// 캐시된 RSC 페이로드를 즉시 반환 후 백그라운드에서 갱신
+// HTML용 staleWhileRevalidate와 달리 캐시 항목 수 제한 로직 포함
+// =============================================
+async function staleWhileRevalidateRsc(request, cacheName) {
+  const cache = await caches.open(cacheName)
+  const cached = await cache.match(request)
+
+  // 백그라운드에서 최신 RSC 데이터를 가져와 캐시 갱신
+  const fetchPromise = fetch(request)
+    .then((response) => {
+      if (response.ok) {
+        // 응답 저장 후 캐시 크기 제한 적용
+        cache.put(request, response.clone()).then(() => trimRscCache(cache))
+      }
+      return response
+    })
+    .catch(() => cached) // 네트워크 실패 시 캐시 데이터로 폴백
+
+  // 캐시 있으면 즉시 반환 (사용자는 이전 데이터를 바로 봄)
+  // 캐시 없으면 네트워크 응답 대기 (최초 방문)
+  return cached ?? fetchPromise
 }
 
 // =============================================
