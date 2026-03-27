@@ -4,7 +4,7 @@
 // 변경 감지 시 router.refresh()로 서버 데이터 갱신
 
 import { useRouter } from "next/navigation"
-import { useCallback, useEffect } from "react"
+import { useCallback, useEffect, useRef } from "react"
 
 import { PaymentStatusRealtime } from "@/components/payment-status-realtime"
 import { createClient } from "@/lib/supabase/client"
@@ -21,6 +21,13 @@ interface GroupRealtimeSyncProps {
 // 변경 감지 시 router.refresh()로 Server Component 데이터를 재조회
 export function GroupRealtimeSync({ groupId, subscriptionIds }: GroupRealtimeSyncProps) {
   const router = useRouter()
+
+  // subscriptionIds를 문자열로 직렬화하여 useEffect 의존성으로 사용
+  // 부모가 매 렌더마다 새 배열을 생성해도 내용이 같으면 채널 재구독을 방지
+  const subIdsKey = subscriptionIds.join(",")
+  // 최신 subscriptionIds를 ref에 저장 — useEffect 내부에서 참조 시 stale closure 방지
+  const subIdsRef = useRef(subscriptionIds)
+  subIdsRef.current = subscriptionIds
 
   // 결제 상태 변경 시 페이지 데이터 갱신
   // useCallback으로 메모이제이션 — PaymentStatusRealtime의 useEffect 재실행 방지
@@ -57,7 +64,8 @@ export function GroupRealtimeSync({ groupId, subscriptionIds }: GroupRealtimeSyn
   // receipts에는 group_id 컬럼이 없으므로 subscription_id IN 필터로 현재 그룹 범위만 구독
   // subscriptionIds가 비어있으면 구독 대상이 없으므로 채널을 생성하지 않음
   useEffect(() => {
-    if (subscriptionIds.length === 0) return
+    const currentIds = subIdsRef.current
+    if (currentIds.length === 0) return
 
     const supabase = createClient()
 
@@ -70,7 +78,7 @@ export function GroupRealtimeSync({ groupId, subscriptionIds }: GroupRealtimeSyn
           schema: "public",
           table: "receipts",
           // Supabase Realtime in 필터 — 현재 그룹의 구독 ID만 감지
-          filter: `subscription_id=in.(${subscriptionIds.join(",")})`,
+          filter: `subscription_id=in.(${currentIds.join(",")})`,
         },
         () => {
           router.refresh()
@@ -81,7 +89,8 @@ export function GroupRealtimeSync({ groupId, subscriptionIds }: GroupRealtimeSyn
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [groupId, subscriptionIds, router])
+    // subIdsKey: subscriptionIds.join(",") 문자열 — 내용이 같으면 재구독하지 않음
+  }, [groupId, subIdsKey, router])
 
   return (
     <div className="flex items-center justify-end">
