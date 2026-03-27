@@ -10,6 +10,11 @@ export function LogoutButton({ className }: { className?: string }) {
   const router = useRouter()
 
   const logout = async () => {
+    // SW의 RSC 캐시를 삭제하여 공용 기기에서 다음 사용자에게 데이터가 노출되지 않도록 함
+    if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({ type: "CLEAR_USER_CACHE" })
+    }
+
     const supabase = createClient()
     await supabase.auth.signOut()
     router.push("/auth/login")

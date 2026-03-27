@@ -5,7 +5,7 @@
 //   3. 페이지 요청 Stale-While-Revalidate (오프라인 대응)
 
 // 캐시 버전 — 정적 자산 업데이트 시 이 값을 올려서 이전 캐시를 무효화
-const CACHE_VERSION = "v1"
+const CACHE_VERSION = "v2"
 
 // App Shell 캐시 이름 — 정적 자산 (JS, CSS, 이미지, 폰트)
 const STATIC_CACHE = `subtracker-static-${CACHE_VERSION}`
@@ -195,7 +195,12 @@ async function staleWhileRevalidate(request, cacheName) {
       }
       return response
     })
-    .catch(() => null)
+    .catch(() => {
+      // 네트워크 실패 시 캐시가 있으면 캐시 반환, 없으면 503 오프라인 응답
+      // null을 반환하면 event.respondWith(null)로 TypeError가 발생하므로 반드시 Response 반환
+      if (cached) return cached
+      return new Response("Offline", { status: 503, statusText: "Service Unavailable" })
+    })
 
   // 캐시가 있으면 즉시 반환 (사용자는 이전 버전을 바로 봄)
   // 캐시가 없으면 네트워크 응답을 기다림 (최초 방문 또는 캐시 만료)
@@ -284,4 +289,15 @@ self.addEventListener("notificationclick", (event) => {
         return clients.openWindow(url)
       })
   )
+})
+
+// =============================================
+// message 이벤트 — 클라이언트에서 postMessage로 캐시 관리 명령 수신
+// 로그아웃 시 RSC 캐시를 삭제하여 다음 사용자에게 이전 사용자 데이터가 노출되지 않도록 함
+// =============================================
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "CLEAR_USER_CACHE") {
+    // RSC 캐시 삭제 — 인증된 사용자 데이터(대시보드, 구독 목록 등) 포함
+    event.waitUntil(caches.delete(RSC_CACHE))
+  }
 })
