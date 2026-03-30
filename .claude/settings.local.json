@@ -21,7 +21,8 @@
       "Skill(git:commit)",
       "mcp__shrimp-task-manager__*",
       "mcp__shrimp-task-manager__",
-      "Skill(docs:update-roadmap)"
+      "Skill(docs:update-roadmap)",
+      "mcp__context7__query-docs"
     ],
     "deny": [],
     "ask": []
