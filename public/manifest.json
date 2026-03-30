@@ -1,6 +1,6 @@
 {
-  "name": "OTT관리",
-  "short_name": "OTT관리",
+  "name": "SubTracker",
+  "short_name": "SubTracker",
   "description": "구독 서비스를 한 곳에서 통합 관리하세요",
   "start_url": "/dashboard",
   "scope": "/",
