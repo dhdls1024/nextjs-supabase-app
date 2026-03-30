@@ -1,9 +1,6 @@
 import type { NextConfig } from "next"
 
 const nextConfig: NextConfig = {
-  // 컴포넌트 캐싱으로 서버 렌더링 성능 향상
-  cacheComponents: true,
-
   // 번들 크기 분석 시 사용 (ANALYZE=true npm run build)
   // 모바일 성능 최적화를 위해 lucide-react 트리쉐이킹 명시적 활성화
   // Next.js 15는 기본으로 SWC를 사용하여 자동 트리쉐이킹 지원
