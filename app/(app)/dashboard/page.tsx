@@ -7,7 +7,7 @@ import { CreditCard } from "lucide-react"
 import Link from "next/link"
 import { Suspense } from "react"
 
-import { getSubscriptionsByUserId } from "@/app/actions/subscription"
+import { advanceOverdueBillingDates, getSubscriptionsByUserId } from "@/app/actions/subscription"
 import { CategoryFilter } from "@/components/category-filter"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -42,6 +42,9 @@ async function DashboardContent({
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) return null
+
+  // 결제일이 지난 구독 먼저 갱신 (Server Action 컨텍스트에서 revalidatePath 동작)
+  await advanceOverdueBillingDates(user.id)
 
   // userId를 직접 전달하여 getUser() 중복 호출 방지
   const subscriptions = await getSubscriptionsByUserId(user.id)

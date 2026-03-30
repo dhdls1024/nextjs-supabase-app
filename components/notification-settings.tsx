@@ -156,7 +156,7 @@ export default function NotificationSettings() {
       <p className="mb-2 text-sm text-muted-foreground">알림설정</p>
       <div className="space-y-4 rounded-xl border bg-card p-4">
         <p className="text-xs text-muted-foreground">
-          결제일(만료일) 하루 전, 당일 알림을 보내드립니다.
+          결제일 D-day 알림 시점을 설정하면 아침 9시에 알림을 보내드립니다.
         </p>
 
         {/* 결제일 알림 토글 — 초기 로딩 또는 요청 중에는 비활성화 */}
@@ -192,7 +192,8 @@ export default function NotificationSettings() {
               ))}
             </div>
             <p className="mt-2 text-xs text-muted-foreground">
-              * 결제일 당일 아침 9시에 알림을 받습니다.
+              * 결제일{selectedDday === 0 ? " 당일" : ` ${selectedDday}일 전`} 아침 9시에 알림을
+              받습니다.
             </p>
           </div>
         )}
