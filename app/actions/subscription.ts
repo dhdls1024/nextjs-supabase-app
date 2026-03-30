@@ -5,10 +5,73 @@
 import { revalidatePath, revalidateTag } from "next/cache"
 
 import { createClient } from "@/lib/supabase/server"
-import { ANALYTICS_CACHE_TTL } from "@/lib/types"
 import type { Subscription, SubscriptionInsert, SubscriptionUpdate } from "@/lib/types/database"
 
 import type { ActionResult } from "./types"
+
+// billing_cycle에 따라 다음 결제일을 계산하는 유틸
+// 월말 처리: 1월 31일 → 2월 28일처럼 해당 월의 마지막 날로 클램핑
+function calcNextBillingDate(dateStr: string, cycle: "MONTHLY" | "YEARLY"): string {
+  const date = new Date(dateStr)
+  const day = date.getUTCDate()
+
+  if (cycle === "MONTHLY") {
+    // 다음 달의 같은 일수로 이동 (월말 초과 시 해당 월 마지막 날로 클램핑)
+    const nextMonth = date.getUTCMonth() + 1
+    const year = nextMonth === 12 ? date.getUTCFullYear() + 1 : date.getUTCFullYear()
+    const month = nextMonth % 12
+    const maxDay = new Date(Date.UTC(year, month + 1, 0)).getUTCDate()
+    return `${year}-${String(month + 1).padStart(2, "0")}-${String(Math.min(day, maxDay)).padStart(2, "0")}`
+  } else {
+    // 내년 같은 날짜로 이동 (2월 29일 → 윤년 아닌 경우 2월 28일로 클램핑)
+    const nextYear = date.getUTCFullYear() + 1
+    const month = date.getUTCMonth()
+    const maxDay = new Date(Date.UTC(nextYear, month + 1, 0)).getUTCDate()
+    return `${nextYear}-${String(month + 1).padStart(2, "0")}-${String(Math.min(day, maxDay)).padStart(2, "0")}`
+  }
+}
+
+// 결제일이 지난 구독들의 next_billing_date를 다음 주기로 일괄 업데이트하는 Server Action
+// 페이지 로드 시 호출 — revalidatePath가 유효한 Server Action 컨텍스트에서 실행되어야 캐시 무효화됨
+export async function advanceOverdueBillingDates(userId: string): Promise<void> {
+  const supabase = await createClient()
+
+  // UTC+9(KST) 기준 오늘 날짜 문자열 (YYYY-MM-DD)
+  const todayKST = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10)
+
+  // 결제일이 오늘보다 과거인 활성 구독만 DB에서 조회
+  const { data, error } = await supabase
+    .from("subscriptions")
+    .select("id, next_billing_date, billing_cycle")
+    .eq("user_id", userId)
+    .eq("status", "ACTIVE")
+    .lt("next_billing_date", todayKST)
+
+  if (error || !data || data.length === 0) return
+
+  // 각 구독의 새 결제일 계산 (여러 주기 지난 경우 반복)
+  const updates = data.map((s) => {
+    let newDate = s.next_billing_date
+    while (newDate < todayKST) {
+      newDate = calcNextBillingDate(newDate, s.billing_cycle as "MONTHLY" | "YEARLY")
+    }
+    return { id: s.id, next_billing_date: newDate }
+  })
+
+  // 개별 update — RLS 환경에서 기존 행만 안전하게 갱신
+  await Promise.all(
+    updates.map((u) =>
+      supabase
+        .from("subscriptions")
+        .update({ next_billing_date: u.next_billing_date })
+        .eq("id", u.id)
+    )
+  )
+
+  // Server Action 컨텍스트에서 호출되므로 revalidatePath가 정상 동작
+  revalidatePath("/dashboard")
+  revalidatePath("/subscriptions")
+}
 
 // 현재 로그인한 사용자의 구독 목록 조회
 // Server Component에서 직접 호출 — 'use server' 불필요한 일반 async 함수이나
@@ -111,7 +174,7 @@ export async function createSubscription(
   revalidatePath("/dashboard")
   revalidatePath("/analytics")
   // unstable_cache 태그 무효화 — analytics 통계 캐시를 즉시 삭제하여 최신 데이터 반영
-  revalidateTag(`analytics-${user.id}`, { expire: ANALYTICS_CACHE_TTL })
+  revalidateTag(`analytics-${user.id}`)
   return { success: true, data: data as Subscription }
 }
 
@@ -143,7 +206,7 @@ export async function updateSubscription(
   revalidatePath(`/subscriptions/${id}`)
   revalidatePath("/analytics")
   // unstable_cache 태그 무효화 — analytics 통계 캐시를 즉시 삭제하여 최신 데이터 반영
-  revalidateTag(`analytics-${user.id}`, { expire: ANALYTICS_CACHE_TTL })
+  revalidateTag(`analytics-${user.id}`)
   return { success: true, data: data as Subscription }
 }
 
@@ -182,6 +245,6 @@ export async function deleteSubscription(id: string): Promise<ActionResult> {
   revalidatePath("/dashboard")
   revalidatePath("/analytics")
   // unstable_cache 태그 무효화 — analytics 통계 캐시를 즉시 삭제하여 최신 데이터 반영
-  revalidateTag(`analytics-${user.id}`, { expire: ANALYTICS_CACHE_TTL })
+  revalidateTag(`analytics-${user.id}`)
   return { success: true, data: undefined }
 }
