@@ -1,8 +1,6 @@
 // Route: /groups
 // Features: F005, F006
 // 공유 그룹 목록 페이지 — Server Component
-// 현재 사용자의 그룹 목록을 Supabase에서 조회하여 렌더링
-// cacheComponents 환경: 데이터 조회를 Suspense 경계 안에서 처리
 
 import { Users } from "lucide-react"
 import Image from "next/image"
@@ -13,9 +11,6 @@ import { getAllGroupSubscriptionsForUserById, getGroupsByUserId } from "@/app/ac
 import { CreateGroupModal } from "@/components/create-group-modal"
 import { JoinGroupModal } from "@/components/join-group-modal"
 import { PageHeader } from "@/components/page-header"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { createClient } from "@/lib/supabase/server"
 import type { Group, GroupSubscription, Subscription } from "@/lib/types/database"
 
@@ -35,57 +30,99 @@ function GroupCard({
     : null
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="flex items-center gap-2">
-          <Users className="h-5 w-5 text-muted-foreground" />
-          <span>{group.name}</span>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-2 pt-0">
-        {/* 공유 구독 요약 — 서비스명 · 결제일 · 결제상태 */}
+    <div
+      className="overflow-hidden rounded-2xl transition-all duration-200"
+      style={{
+        background: "hsl(var(--card))",
+        border: "1px solid hsl(var(--border))",
+      }}
+    >
+      {/* 그룹 헤더 */}
+      <div
+        className="flex items-center gap-3 border-b px-4 py-4"
+        style={{ borderColor: "hsl(var(--border) / 0.6)" }}
+      >
+        {/* 그룹 아이콘 */}
+        <div
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+          style={{ background: "hsl(var(--primary) / 0.12)", color: "hsl(var(--primary))" }}
+        >
+          <Users className="h-5 w-5" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p
+            className="truncate text-sm font-semibold"
+            style={{ fontFamily: "'Sora', sans-serif" }}
+          >
+            {group.name}
+          </p>
+          <p className="text-xs" style={{ color: "hsl(var(--muted-foreground))" }}>
+            {groupSubs.length}개 구독
+          </p>
+        </div>
+      </div>
+
+      {/* 공유 구독 미리보기 */}
+      <div className="px-4 py-3">
         {firstSub?.subscription ? (
-          <div className="flex items-center gap-2 rounded-md bg-muted/50 px-3 py-1.5">
-            {/* 서비스 로고 — logo_url 있으면 이미지, 없으면 미표시 */}
+          <div
+            className="mb-3 flex items-center gap-2 rounded-xl px-3 py-2.5"
+            style={{ background: "hsl(var(--muted) / 0.6)" }}
+          >
+            {/* 서비스 로고 */}
             {firstSub.subscription.logo_url && (
               <Image
                 src={firstSub.subscription.logo_url}
                 alt={firstSub.subscription.name}
-                width={16}
-                height={16}
-                className="h-4 w-4 shrink-0 rounded object-contain"
-                // 그룹 카드 이미지는 뷰포트 밖일 수 있으므로 lazy 로딩
+                width={18}
+                height={18}
+                className="h-[18px] w-[18px] shrink-0 rounded object-contain"
                 loading="lazy"
               />
             )}
-            <span className="flex-1 truncate text-sm font-medium">
+            <span className="flex-1 truncate text-xs font-medium">
               {firstSub.subscription.name}
             </span>
-            <span className="shrink-0 text-xs text-muted-foreground">{billingDate}</span>
-            <Badge
-              variant={firstSub.payment_status === "PAID" ? "default" : "outline"}
-              className="shrink-0 text-xs"
+            <span className="shrink-0 text-xs" style={{ color: "hsl(var(--muted-foreground))" }}>
+              {billingDate}
+            </span>
+            {/* 납부 상태 배지 */}
+            <span
+              className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold"
+              style={
+                firstSub.payment_status === "PAID"
+                  ? { background: "rgba(34, 197, 94, 0.15)", color: "#22c55e" }
+                  : { background: "rgba(249, 115, 22, 0.15)", color: "#f97316" }
+              }
             >
               {firstSub.payment_status === "PAID" ? "납부완료" : "미납"}
-            </Badge>
+            </span>
           </div>
         ) : (
-          <p className="text-xs text-muted-foreground">공유 구독 없음</p>
+          <p className="mb-3 text-xs" style={{ color: "hsl(var(--muted-foreground))" }}>
+            공유 구독 없음
+          </p>
         )}
 
-        <Button asChild variant="outline" size="sm" className="w-full">
-          <Link href={`/groups/${group.id}`}>상세 보기</Link>
-        </Button>
-      </CardContent>
-    </Card>
+        {/* 상세 보기 버튼 */}
+        <Link
+          href={`/groups/${group.id}`}
+          className="flex h-9 w-full items-center justify-center rounded-xl text-xs font-semibold transition-all duration-200 active:scale-[0.98]"
+          style={{
+            background: "hsl(var(--primary) / 0.1)",
+            color: "hsl(var(--primary))",
+            border: "1px solid hsl(var(--primary) / 0.2)",
+          }}
+        >
+          상세 보기
+        </Link>
+      </div>
+    </div>
   )
 }
 
 // 그룹 목록을 조회하고 렌더링하는 내부 Server Component
-// Suspense 경계 안에서 실행되어 cacheComponents와 호환됨
-// getUser() 1회 호출 후 userId를 두 쿼리에 전달 — Auth 왕복 2회 → 1회 절감
 async function GroupsContent() {
-  // getUser()를 한 번만 호출하여 userId를 직접 전달
   const supabase = await createClient()
   const {
     data: { user },
@@ -100,14 +137,28 @@ async function GroupsContent() {
 
   if (groups.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground">
-        아직 참여한 그룹이 없습니다. 그룹을 만들거나 초대 코드로 참여하세요.
-      </p>
+      <div className="flex flex-col items-center justify-center py-24 text-center">
+        <div
+          className="mb-5 flex h-20 w-20 items-center justify-center rounded-3xl"
+          style={{
+            background: "hsl(var(--primary) / 0.1)",
+            border: "1px solid hsl(var(--primary) / 0.2)",
+          }}
+        >
+          <Users className="h-9 w-9" style={{ color: "hsl(var(--primary))" }} />
+        </div>
+        <p className="text-base font-semibold" style={{ fontFamily: "'Sora', sans-serif" }}>
+          참여한 그룹이 없습니다
+        </p>
+        <p className="mt-1 text-sm" style={{ color: "hsl(var(--muted-foreground))" }}>
+          그룹을 만들거나 초대 코드로 참여하세요.
+        </p>
+      </div>
     )
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4">
       {groups.map((group) => (
         <GroupCard
           key={group.id}
@@ -122,8 +173,8 @@ async function GroupsContent() {
 
 export default function GroupsPage() {
   return (
-    <div className="space-y-8">
-      {/* 페이지 헤더 — 우측에 그룹 참여 + 그룹 만들기 버튼 배치 */}
+    <div>
+      {/* 페이지 헤더 */}
       <PageHeader title="공유 그룹" description="구독을 함께 관리하는 그룹">
         <div className="flex items-center gap-2">
           <JoinGroupModal />
@@ -131,10 +182,14 @@ export default function GroupsPage() {
         </div>
       </PageHeader>
 
-      {/* Suspense 경계 — cacheComponents와 호환되도록 데이터 조회를 감쌈 */}
+      {/* Suspense 경계 */}
       <Suspense
         fallback={
-          <div className="py-8 text-center text-sm text-muted-foreground">불러오는 중...</div>
+          <div className="space-y-4">
+            {Array.from({ length: 2 }).map((_, i) => (
+              <div key={i} className="h-[152px] animate-pulse rounded-2xl bg-muted" />
+            ))}
+          </div>
         }
       >
         <GroupsContent />

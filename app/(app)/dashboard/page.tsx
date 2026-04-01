@@ -1,16 +1,15 @@
 // Route: /dashboard
 // Features: F002, F003
 // 요약 통계(활성 구독 수, 결제 임박 수)와 카테고리별 구독 목록을 표시하는 대시보드 페이지
-// cacheComponents 환경: 데이터 조회를 Suspense 경계 안에서 처리
 
 import { CreditCard } from "lucide-react"
 import Link from "next/link"
 import { Suspense } from "react"
 
 import { advanceOverdueBillingDates, getSubscriptionsByUserId } from "@/app/actions/subscription"
+import { AmountDisplay } from "@/components/amount-display"
 import { CategoryFilter } from "@/components/category-filter"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { createClient } from "@/lib/supabase/server"
 import type { Subscription } from "@/lib/types/database"
 
@@ -28,7 +27,6 @@ function checkIsUrgent(nextBillingDate: string): boolean {
 }
 
 // 구독 목록과 요약 카드를 함께 렌더링하는 내부 Server Component
-// Suspense 경계 안에서 실행되어 cacheComponents와 호환됨
 async function DashboardContent({
   searchParams,
 }: {
@@ -43,7 +41,7 @@ async function DashboardContent({
   } = await supabase.auth.getUser()
   if (!user) return null
 
-  // 결제일이 지난 구독 먼저 갱신 (Server Action 컨텍스트에서 revalidatePath 동작)
+  // 결제일이 지난 구독 먼저 갱신
   await advanceOverdueBillingDates(user.id)
 
   // userId를 직접 전달하여 getUser() 중복 호출 방지
@@ -52,12 +50,23 @@ async function DashboardContent({
   // 구독이 0개일 때 빈 상태 안내 UI 표시
   if (subscriptions.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-center">
-        {/* CreditCard 아이콘 — 구독 없음 상태를 시각적으로 전달 */}
-        <CreditCard className="mb-4 h-12 w-12 text-muted-foreground" />
-        <p className="mb-1 text-lg font-semibold">구독이 없습니다.</p>
-        <p className="mb-6 text-sm text-muted-foreground">첫 번째 구독을 추가해보세요.</p>
-        <Button asChild>
+      <div className="flex flex-col items-center justify-center py-24 text-center">
+        <div
+          className="mb-5 flex h-20 w-20 items-center justify-center rounded-3xl"
+          style={{
+            background: "hsl(var(--primary) / 0.1)",
+            border: "1px solid hsl(var(--primary) / 0.2)",
+          }}
+        >
+          <CreditCard className="h-9 w-9" style={{ color: "hsl(var(--primary))" }} />
+        </div>
+        <p className="mb-1 text-lg font-bold" style={{ fontFamily: "'Sora', sans-serif" }}>
+          구독이 없습니다
+        </p>
+        <p className="mb-7 text-sm" style={{ color: "hsl(var(--muted-foreground))" }}>
+          첫 번째 구독을 추가해보세요.
+        </p>
+        <Button asChild className="rounded-xl px-6">
           <Link href="/subscriptions/new">+ 구독 추가</Link>
         </Button>
       </div>
@@ -69,29 +78,87 @@ async function DashboardContent({
     checkIsUrgent(s.next_billing_date)
   ).length
 
+  // 이번 달 총 지출 계산 (ACTIVE 구독만)
+  const totalMonthly = subscriptions
+    .filter((s: Subscription) => s.status === "ACTIVE")
+    .reduce((sum: number, s: Subscription) => sum + s.amount, 0)
+
   return (
     <>
-      <CategoryFilter subscriptions={subscriptions} initialCategory={category} />
+      {/* 요약 통계 카드 그리드 */}
+      <div className="mb-6 grid grid-cols-3 gap-3">
+        {/* 총 지출 — 넓은 카드 */}
+        <div
+          className="col-span-3 rounded-2xl p-4"
+          style={{
+            background: "var(--gradient-primary)",
+            boxShadow: "var(--glow-primary)",
+          }}
+        >
+          <p className="text-xs font-medium text-white/70">이번 달 총 구독 지출</p>
+          <p
+            className="display-number mt-1 text-2xl font-bold text-white"
+            style={{ fontFamily: "'Sora', sans-serif" }}
+          >
+            <AmountDisplay amount={totalMonthly} />
+          </p>
+        </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">활성 구독</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{activeCount}개</p>
-          </CardContent>
-        </Card>
+        {/* 활성 구독 수 카드 */}
+        <div
+          className="col-span-2 rounded-2xl p-4"
+          style={{
+            background: "hsl(var(--card))",
+            border: "1px solid hsl(var(--border))",
+          }}
+        >
+          <p className="text-xs font-medium" style={{ color: "hsl(var(--muted-foreground))" }}>
+            활성 구독
+          </p>
+          <p
+            className="display-number mt-1 text-2xl font-bold"
+            style={{ fontFamily: "'Sora', sans-serif", color: "hsl(var(--foreground))" }}
+          >
+            {activeCount}
+            <span
+              className="ml-1 text-sm font-normal"
+              style={{ color: "hsl(var(--muted-foreground))" }}
+            >
+              개
+            </span>
+          </p>
+        </div>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">결제 임박</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{urgentCount}개</p>
-          </CardContent>
-        </Card>
+        {/* 결제 임박 카드 */}
+        <div
+          className="col-span-1 rounded-2xl p-4"
+          style={{
+            background: urgentCount > 0 ? "rgba(249, 115, 22, 0.1)" : "hsl(var(--card))",
+            border:
+              urgentCount > 0
+                ? "1px solid rgba(249, 115, 22, 0.3)"
+                : "1px solid hsl(var(--border))",
+          }}
+        >
+          <p
+            className="text-xs font-medium"
+            style={{ color: urgentCount > 0 ? "#f97316" : "hsl(var(--muted-foreground))" }}
+          >
+            결제 임박
+          </p>
+          <p
+            className="display-number mt-1 text-2xl font-bold"
+            style={{
+              fontFamily: "'Sora', sans-serif",
+              color: urgentCount > 0 ? "#f97316" : "hsl(var(--foreground))",
+            }}
+          >
+            {urgentCount}
+          </p>
+        </div>
       </div>
+
+      <CategoryFilter subscriptions={subscriptions} initialCategory={category} />
     </>
   )
 }
@@ -103,26 +170,38 @@ export default function DashboardPage({
 }) {
   return (
     <div>
-      {/* 페이지 헤더 - 제목과 구독 추가 버튼 */}
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">구독</h1>
-        <Button asChild>
-          <Link href="/subscriptions/new">+ 구독 추가</Link>
+      {/* 페이지 헤더 */}
+      <div className="mb-7 flex items-center justify-between">
+        <div>
+          <h1
+            className="text-2xl font-bold tracking-tight"
+            style={{ fontFamily: "'Sora', sans-serif" }}
+          >
+            내 구독
+          </h1>
+          <p className="mt-0.5 text-xs" style={{ color: "hsl(var(--muted-foreground))" }}>
+            구독 서비스를 한눈에
+          </p>
+        </div>
+        <Button asChild size="sm" className="rounded-xl">
+          <Link href="/subscriptions/new">+ 추가</Link>
         </Button>
       </div>
 
-      {/* Suspense 경계 — 스켈레톤 fallback으로 CLS(레이아웃 이동) 방지 */}
+      {/* Suspense 경계 — 스켈레톤 fallback */}
       <Suspense
         fallback={
-          // 실제 콘텐츠와 유사한 높이의 스켈레톤으로 레이아웃 안정성 확보
-          <div className="space-y-4" aria-hidden="true">
-            <div className="h-14 animate-pulse rounded-lg bg-muted" />
-            <div className="grid grid-cols-2 gap-4">
-              <div className="h-20 animate-pulse rounded-xl bg-muted" />
-              <div className="h-20 animate-pulse rounded-xl bg-muted" />
+          <div className="space-y-3" aria-hidden="true">
+            {/* 총 지출 스켈레톤 */}
+            <div className="h-[76px] animate-pulse rounded-2xl bg-muted" />
+            <div className="grid grid-cols-3 gap-3">
+              <div className="col-span-2 h-20 animate-pulse rounded-2xl bg-muted" />
+              <div className="col-span-1 h-20 animate-pulse rounded-2xl bg-muted" />
             </div>
+            {/* 카드 목록 스켈레톤 */}
+            <div className="mt-5 h-12 animate-pulse rounded-xl bg-muted" />
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="h-24 animate-pulse rounded-lg bg-muted" />
+              <div key={i} className="h-[108px] animate-pulse rounded-2xl bg-muted" />
             ))}
           </div>
         }

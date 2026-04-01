@@ -23,18 +23,29 @@ function getProviderLabel(provider: string): string {
 }
 
 // provider별 배지 색상
-function getProviderColor(provider: string): string {
-  const map: Record<string, string> = {
-    google: "bg-white text-gray-700 border border-gray-200",
-    email: "bg-blue-500 text-white",
-    github: "bg-gray-800 text-white",
-    kakao: "bg-yellow-400 text-gray-900",
+function getProviderColor(provider: string): { background: string; color: string } {
+  const map: Record<string, { background: string; color: string }> = {
+    google: { background: "#fff", color: "#444" },
+    email: { background: "#4f46e5", color: "#fff" },
+    github: { background: "#1f2937", color: "#fff" },
+    kakao: { background: "#FEE500", color: "#1a1a1a" },
   }
-  return map[provider] ?? "bg-muted text-muted-foreground"
+  return map[provider] ?? { background: "hsl(var(--muted))", color: "hsl(var(--muted-foreground))" }
 }
 
-// 계정 정보 서버 컴포넌트 — Suspense 경계 안에서 렌더링하여 Uncached data 오류 방지
-// Supabase createClient()가 캐시되지 않은 데이터에 접근하므로 Suspense로 감싸야 함
+// 섹션 레이블 공통 스타일 컴포넌트
+function SectionLabel({ label }: { label: string }) {
+  return (
+    <p
+      className="mb-2 px-1 text-xs font-semibold uppercase tracking-wider"
+      style={{ color: "hsl(var(--muted-foreground))" }}
+    >
+      {label}
+    </p>
+  )
+}
+
+// 계정 정보 서버 컴포넌트
 async function AccountSection() {
   const supabase = await createClient()
   const {
@@ -44,25 +55,37 @@ async function AccountSection() {
   // app_metadata.provider: "google" | "email" | "github" 등
   const provider = (user?.app_metadata?.provider as string) ?? "email"
   const nickname = (user?.user_metadata?.nickname as string) ?? ""
+  const providerStyle = getProviderColor(provider)
 
   return (
     <section>
-      <p className="mb-2 text-sm text-muted-foreground">계정</p>
-      <div className="rounded-xl border bg-card p-4">
-        {/* 플랫폼 | 이메일 | 로그아웃 */}
-        <div className="flex items-center gap-3">
+      <SectionLabel label="계정" />
+      <div
+        className="overflow-hidden rounded-2xl"
+        style={{
+          background: "hsl(var(--card))",
+          border: "1px solid hsl(var(--border))",
+        }}
+      >
+        {/* 사용자 정보 행 */}
+        <div className="flex items-center gap-3 px-4 py-4">
+          {/* 플랫폼 배지 */}
           <span
-            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${getProviderColor(provider)}`}
-            title={provider}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border text-xs font-bold"
+            style={{ ...providerStyle, borderColor: "hsl(var(--border))" }}
           >
             {getProviderLabel(provider)}
           </span>
-          <p className="flex-1 truncate text-sm">{user?.email}</p>
+          <p className="flex-1 truncate text-sm" style={{ color: "hsl(var(--foreground))" }}>
+            {user?.email}
+          </p>
           <LogoutButton />
         </div>
 
-        {/* 닉네임 설정 — 인라인 편집 */}
-        <NicknameForm initialNickname={nickname} />
+        {/* 닉네임 설정 구분선 후 표시 */}
+        <div className="border-t px-4 py-4" style={{ borderColor: "hsl(var(--border) / 0.6)" }}>
+          <NicknameForm initialNickname={nickname} />
+        </div>
       </div>
     </section>
   )
@@ -70,42 +93,67 @@ async function AccountSection() {
 
 export default async function MorePage() {
   return (
-    <div className="space-y-4">
-      {/* 계정 섹션 — Suspense로 감싸서 Supabase 비동기 호출 격리 */}
+    <div className="space-y-6">
+      {/* 페이지 헤더 */}
+      <div className="mb-7">
+        <h1 className="text-2xl font-bold" style={{ fontFamily: "'Sora', sans-serif" }}>
+          더보기
+        </h1>
+        <p className="mt-0.5 text-xs" style={{ color: "hsl(var(--muted-foreground))" }}>
+          계정 및 앱 설정
+        </p>
+      </div>
+
+      {/* 계정 섹션 */}
       <Suspense
         fallback={
           <section>
-            <p className="mb-2 text-sm text-muted-foreground">계정</p>
-            <div className="space-y-3 rounded-xl border bg-card p-4">
-              <p className="text-sm text-muted-foreground">불러오는 중...</p>
-            </div>
+            <SectionLabel label="계정" />
+            <div className="h-[120px] animate-pulse rounded-2xl bg-muted" />
           </section>
         }
       >
         <AccountSection />
       </Suspense>
 
-      {/* 테마 설정 섹션 */}
+      {/* 화면 설정 섹션 */}
       <section>
-        <p className="mb-2 text-sm text-muted-foreground">화면</p>
-        <div className="rounded-xl border bg-card p-4">
-          <div className="flex items-center justify-between">
-            <span className="text-sm">테마</span>
+        <SectionLabel label="화면" />
+        <div
+          className="overflow-hidden rounded-2xl"
+          style={{
+            background: "hsl(var(--card))",
+            border: "1px solid hsl(var(--border))",
+          }}
+        >
+          <div className="flex items-center justify-between px-4 py-4">
+            <span className="text-sm font-medium">테마</span>
             <ThemeSwitcher />
           </div>
         </div>
       </section>
 
-      {/* 알림설정 섹션 — 상태 관리가 필요해 Client Component로 분리 */}
+      {/* 알림 설정 섹션 */}
       <NotificationSettings />
 
       {/* 앱 정보 섹션 */}
       <section>
-        <p className="mb-2 text-sm text-muted-foreground">앱 정보</p>
-        <div className="rounded-xl border bg-card p-4">
-          <div className="flex items-center justify-between">
-            <span className="text-sm">앱 버전</span>
-            <span className="text-sm text-muted-foreground">{APP_VERSION}</span>
+        <SectionLabel label="앱 정보" />
+        <div
+          className="overflow-hidden rounded-2xl"
+          style={{
+            background: "hsl(var(--card))",
+            border: "1px solid hsl(var(--border))",
+          }}
+        >
+          <div className="flex items-center justify-between px-4 py-4">
+            <span className="text-sm font-medium">앱 버전</span>
+            <span
+              className="rounded-full px-2.5 py-1 text-xs font-medium"
+              style={{ background: "hsl(var(--muted))", color: "hsl(var(--muted-foreground))" }}
+            >
+              v{APP_VERSION}
+            </span>
           </div>
         </div>
       </section>
