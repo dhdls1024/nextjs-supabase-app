@@ -23,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import type { ServicePreset } from "@/lib/types/database"
 import { BILLING_CYCLES, CATEGORIES, SUBSCRIPTION_STATUSES } from "@/lib/types/index"
 import { subscriptionSchema } from "@/lib/validations/subscription"
 
@@ -37,50 +38,6 @@ const FAVICON_BASE = "https://www.google.com/s2/favicons"
 function getFaviconUrl(domain: string): string {
   return `${FAVICON_BASE}?domain=${domain}&sz=64`
 }
-
-// 카테고리별 서비스 프리셋 목록
-// 서비스 선택 시 name과 logo_url을 자동으로 채우기 위한 데이터
-// PHASE3: Supabase services 테이블로 교체 예정
-const SERVICE_PRESETS: Record<string, Array<{ name: string; domain: string }>> = {
-  OTT: [
-    { name: "Netflix", domain: "netflix.com" },
-    { name: "디즈니+", domain: "disneyplus.com" },
-    { name: "티빙", domain: "tving.com" },
-    { name: "웨이브", domain: "wavve.com" },
-    { name: "쿠팡플레이", domain: "coupangplay.com" },
-    { name: "왓챠", domain: "watcha.com" },
-    { name: "애플TV+", domain: "tv.apple.com" },
-  ],
-  AI: [
-    { name: "ChatGPT Plus", domain: "openai.com" },
-    { name: "Claude Pro", domain: "claude.ai" },
-    { name: "Gemini Advanced", domain: "gemini.google.com" },
-    { name: "Copilot Pro", domain: "copilot.microsoft.com" },
-    { name: "Perplexity Pro", domain: "perplexity.ai" },
-    { name: "Midjourney", domain: "midjourney.com" },
-  ],
-  SHOPPING: [
-    { name: "쿠팡 로켓와우", domain: "coupang.com" },
-    { name: "네이버플러스 멤버십", domain: "naver.com" },
-    { name: "컬리패스", domain: "kurly.com" },
-    { name: "SSG 유니버스클럽", domain: "ssg.com" },
-  ],
-  MUSIC: [
-    { name: "Spotify", domain: "spotify.com" },
-    { name: "Apple Music", domain: "music.apple.com" },
-    { name: "YouTube Music", domain: "music.youtube.com" },
-    { name: "멜론", domain: "melon.com" },
-  ],
-  OTHER: [
-    { name: "YouTube Premium", domain: "youtube.com" },
-    { name: "네이버 웹툰", domain: "comic.naver.com" },
-    { name: "밀리의 서재", domain: "millie.co.kr" },
-    { name: "리디셀렉트", domain: "ridibooks.com" },
-  ],
-}
-
-// 서비스 프리셋 항목 타입
-type ServicePreset = { name: string; domain: string }
 
 // 필드 에러 메시지 컴포넌트 — 각 필드 아래에 오류 표시
 function FieldError({ message }: { message?: string }) {
@@ -151,11 +108,13 @@ function ServicePicker({
   selectedName,
   onSelect,
   onManualInput,
+  presets,
 }: {
   category: string
   selectedName: string
   onSelect: (service: ServicePreset) => void
   onManualInput: () => void
+  presets: ServicePreset[]
 }) {
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -171,7 +130,8 @@ function ServicePicker({
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
 
-  const services = category ? (SERVICE_PRESETS[category] ?? []) : []
+  // 선택된 카테고리에 해당하는 프리셋만 필터링
+  const services = category ? presets.filter((p) => p.category === category) : []
 
   function handleSelect(service: ServicePreset) {
     onSelect(service)
@@ -234,7 +194,8 @@ function ServicePicker({
 
 // SubscriptionForm: 구독 서비스 추가 폼
 // react-hook-form으로 상태 관리, zod 스키마로 유효성 검증
-export function SubscriptionForm() {
+// servicePresets: SSR에서 조회한 서비스 프리셋 데이터를 prop으로 전달받음
+export function SubscriptionForm({ servicePresets }: { servicePresets: ServicePreset[] }) {
   const router = useRouter()
   // useTransition: Server Action 호출 중 pending 상태 관리
   const [isPending, startTransition] = useTransition()
@@ -351,6 +312,7 @@ export function SubscriptionForm() {
               selectedName={selectedName}
               onSelect={handleServiceSelect}
               onManualInput={handleManualInput}
+              presets={servicePresets}
             />
           </>
         )}

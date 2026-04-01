@@ -267,6 +267,30 @@ export type Database = {
         }
         Relationships: []
       }
+      service_presets: {
+        Row: {
+          id: string
+          name: string
+          domain: string
+          category: string
+          sort_order: number
+        }
+        Insert: {
+          id?: string
+          name: string
+          domain: string
+          category: string
+          sort_order?: number
+        }
+        Update: {
+          id?: string
+          name?: string
+          domain?: string
+          category?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       category_monthly_stats: {
@@ -328,6 +352,11 @@ export type Tables<
 
 // profiles 테이블 Row 타입 — Tables 헬퍼로 추출
 export type Profile = Tables<"profiles">
+
+// service_presets 테이블 Row 타입 (category를 유니온 리터럴로 강화)
+export type ServicePreset = Omit<Tables<"service_presets">, "category"> & {
+  category: "OTT" | "AI" | "SHOPPING" | "MUSIC" | "OTHER"
+}
 
 // subscriptions 테이블 Row 타입 (카테고리/상태를 유니온 리터럴로 강화)
 export type Subscription = Omit<

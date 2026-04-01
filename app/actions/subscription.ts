@@ -5,7 +5,12 @@
 import { revalidatePath, revalidateTag } from "next/cache"
 
 import { createClient } from "@/lib/supabase/server"
-import type { Subscription, SubscriptionInsert, SubscriptionUpdate } from "@/lib/types/database"
+import type {
+  ServicePreset,
+  Subscription,
+  SubscriptionInsert,
+  SubscriptionUpdate,
+} from "@/lib/types/database"
 
 import type { ActionResult } from "./types"
 
@@ -247,4 +252,23 @@ export async function deleteSubscription(id: string): Promise<ActionResult> {
   // unstable_cache 태그 무효화 — analytics 통계 캐시를 즉시 삭제하여 최신 데이터 반영
   revalidateTag(`analytics-${user.id}`)
   return { success: true, data: undefined }
+}
+
+// service_presets 전체 조회 — 인증 필요 (RLS)
+// 전체 25개를 한 번에 조회하여 클라이언트에서 카테고리별 필터링
+export async function getServicePresets(): Promise<ServicePreset[]> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return []
+
+  const { data, error } = await supabase
+    .from("service_presets")
+    .select("*")
+    .order("category")
+    .order("sort_order")
+
+  if (error) return []
+  return (data ?? []) as ServicePreset[]
 }
